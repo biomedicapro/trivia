@@ -3,292 +3,497 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Estudio Interactivo - Preguntas y Flashcards</title>
+  <title>QWeb – Preguntas y Flashcards</title>
   <style>
-    /* Estilos generales */
-    * {
-      margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif;
-    }
+    /* Estilos generales y minimalistas */
     body {
-      background-color: #f5f5f5; color: #333; line-height: 1.6;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      color: #333;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dark-mode {
+      background-color: #222;
+      color: #ddd;
     }
     header {
-      background-color: #fff; padding: 10px 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000;
+      background: #007bff;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
     }
-    header nav {
-      display: flex; justify-content: space-around;
+    nav {
+      background: #fff;
+      display: flex;
+      justify-content: center;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    header nav a {
-      text-decoration: none; color: #333; padding: 8px 12px; border-radius: 4px;
-      transition: background-color 0.3s;
+    nav button {
+      background: none;
+      border: none;
+      margin: 0 15px;
+      font-size: 16px;
+      cursor: pointer;
     }
-    header nav a:hover, header nav a.active {
-      background-color: #ddd;
+    .container {
+      padding: 20px;
     }
-    /* Secciones */
     .section {
-      display: none; padding: 20px;
+      display: none;
     }
     .section.active {
       display: block;
     }
-    /* Formularios y botones */
-    form {
-      max-width: 800px; margin: 0 auto;
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      box-sizing: border-box;
     }
-    form input, form select, form textarea, form input[type="datetime-local"] {
-      width: 100%; padding: 10px; margin-bottom: 10px;
-      border: 1px solid #ccc; border-radius: 4px; font-size: 16px;
+    button {
+      padding: 10px 20px;
+      cursor: pointer;
     }
-    form button {
-      padding: 10px 20px; border: none; background-color: #333;
-      color: #fff; font-size: 16px; border-radius: 4px; cursor: pointer;
-      transition: background-color 0.3s;
+    .alert {
+      background: #d4edda;
+      color: #155724;
+      padding: 10px;
+      margin: 10px 0;
+      display: none;
     }
-    form button:hover {
-      background-color: #555;
+    /* Estilos para la interfaz de estudio/repaso en pantalla completa */
+    .study-fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
     }
-    /* Notificaciones y mensajes */
-    #loadingMessage, #notificacion {
-      text-align: center; margin-top: 10px; font-weight: bold;
+    .study-content {
+      flex: 1;
+      display: flex;
     }
-    #loadingMessage { color: #555; }
-    #notificacion { color: green; }
+    .question-area {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .sidebar {
+      width: 60px;
+      background: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 0;
+    }
+    .sidebar button {
+      background: none;
+      border: none;
+      margin: 10px 0;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .progress-bar {
+      height: 5px;
+      background: #007bff;
+      width: 0%;
+      transition: width 0.3s;
+    }
   </style>
 </head>
 <body>
   <header>
-    <nav>
-      <a href="#" class="nav-link active" data-section="crear">Crear preguntas</a>
-      <a href="#" class="nav-link" data-section="estudiar">Estudiar</a>
-      <a href="#" class="nav-link" data-section="repasar">Repasar</a>
-      <a href="#" class="nav-link" data-section="programar">Programar repaso</a>
-    </nav>
+    <h1>QWeb – Preguntas y Flashcards</h1>
   </header>
-
-  <!-- SECCIÓN CREAR PREGUNTAS -->
-  <section id="crear" class="section active">
-    <h2>Pegar Grupo de Preguntas</h2>
-    <form id="grupoPreguntasForm">
-      <label>Asignatura (obligatorio):</label>
-      <input type="text" id="grupoAsignaturaInput" list="asignaturaList" placeholder="Escribe o selecciona asignatura">
-      <datalist id="asignaturaList"></datalist>
-      
-      <label>Tema (obligatorio):</label>
-      <input type="text" id="grupoTemaInput" list="temaList" placeholder="Escribe o selecciona tema">
-      <datalist id="temaList"></datalist>
-      
-      <label>Es USMLE?</label>
-      <input type="checkbox" id="grupoUsmle">
-      
-      <label>
-        Pega las preguntas. Formato:<br>
-        • Cada pregunta: campos separados por comas (Pregunta, Respuesta, Explicación).<br>
-        • Separa cada pregunta con punto y coma (“;”).<br>
-        Ejemplo:<br>
-        ¿Función de la hemoglobina?, Transportar oxígeno, La hemoglobina transporta oxígeno; ¿Qué estructura regula la homeostasis?, Hipotálamo, El hipotálamo regula el equilibrio.
-      </label>
-      <textarea id="grupoTexto" rows="6" placeholder="Ingresa aquí el grupo de preguntas"></textarea>
-      <button type="submit">Agregar Grupo de Preguntas</button>
-      <div id="loadingMessage" style="display:none;">Cargando...</div>
-      <div id="notificacion" style="display:none;">¡Grupo de preguntas agregado!</div>
-    </form>
-  </section>
-
-  <!-- SECCIÓN ESTUDIAR -->
-  <section id="estudiar" class="section">
-    <h2>Estudiar</h2>
-    <button onclick="cargarFiltros()">Cargar preguntas disponibles</button>
-    <div>
-      <label>Asignatura:</label>
-      <select id="estudioAsignatura"></select>
-      <label>Tema:</label>
-      <select id="estudioTema"></select>
+  <nav>
+    <button onclick="showSection('crear')">Crear Preguntas</button>
+    <button onclick="showSection('estudiar')">Estudiar</button>
+    <button onclick="showSection('repasar')">Repasar</button>
+    <button onclick="showSection('programar')">Programar Repaso</button>
+  </nav>
+  <div class="container">
+    <!-- Sección para agregar preguntas -->
+    <div id="crear" class="section active">
+      <h2>Agregar Preguntas</h2>
+      <p>Introduce las preguntas usando este formato:</p>
+      <ul>
+        <li><strong>Flashcards:</strong> "pregunta", "respuesta", "explicación"; "pregunta", "respuesta", "explicación"; ...</li>
+        <li><strong>Tipo Test:</strong> "pregunta", "[opción correcta], [opción 2], [opción 3], …", "explicación"; ...</li>
+      </ul>
+      <input type="text" id="asignatura" placeholder="Asignatura">
+      <input type="text" id="tema" placeholder="Tema">
+      <textarea id="preguntasInput" rows="6" placeholder="Escribe las preguntas separadas por ';'"></textarea>
+      <button onclick="agregarPreguntas()">Agregar Preguntas</button>
+      <div id="alertaExito" class="alert">¡Preguntas agregadas exitosamente!</div>
+    </div>
+    <!-- Sección Estudiar -->
+    <div id="estudiar" class="section">
+      <h2>Selecciona Asignatura y Tema para Estudiar</h2>
+      <select id="selectAsignatura" onchange="cargarTemas()">
+        <option value="">-- Selecciona Asignatura --</option>
+      </select>
+      <select id="selectTema">
+        <option value="">-- Selecciona Tema --</option>
+      </select>
       <button onclick="iniciarEstudio()">Iniciar Estudio</button>
     </div>
-  </section>
-
-  <!-- SECCIÓN REPASAR -->
-  <section id="repasar" class="section">
-    <h2>Repasar</h2>
-    <button onclick="cargarFiltros()">Cargar preguntas disponibles</button>
-    <div>
-      <label>Asignatura:</label>
-      <select id="repasarAsignatura"></select>
-      <label>Tema:</label>
-      <select id="repasarTema"></select>
+    <!-- Sección Repasar -->
+    <div id="repasar" class="section">
+      <h2>Repasar Preguntas</h2>
+      <select id="repasarAsignatura" onchange="cargarTemasRepaso()">
+        <option value="">-- Selecciona Asignatura --</option>
+      </select>
+      <select id="repasarTema">
+        <option value="">-- Selecciona Tema --</option>
+      </select>
+      <select id="repasarDificultad">
+        <option value="">-- Selecciona Dificultad --</option>
+        <option value="facil">Fácil</option>
+        <option value="medio">Medio</option>
+        <option value="dificil">Difícil</option>
+      </select>
+      <label>
+        <input type="checkbox" id="repasarUSMLE"> Es USMLE?
+      </label>
       <button onclick="iniciarRepaso()">Iniciar Repaso</button>
     </div>
-  </section>
-
-  <!-- SECCIÓN PROGRAMAR REPASO -->
-  <section id="programar" class="section">
-    <h2>Programar Repaso</h2>
-    <form id="programarForm">
-      <label>Asignatura:</label>
-      <select id="programarAsignatura"></select>
-      <label>Tema:</label>
-      <select id="programarTema"></select>
-      <label>Clasificación:</label>
-      <select id="programarClasificacion">
-        <option value="">Todas</option>
-        <option value="fácil">Fácil</option>
+    <!-- Sección Programar Repaso -->
+    <div id="programar" class="section">
+      <h2>Programar Repaso</h2>
+      <select id="progAsignatura">
+        <option value="">-- Selecciona Asignatura --</option>
+      </select>
+      <select id="progTema">
+        <option value="">-- Selecciona Tema --</option>
+      </select>
+      <select id="progDificultad">
+        <option value="">-- Selecciona Dificultad --</option>
+        <option value="facil">Fácil</option>
         <option value="medio">Medio</option>
-        <option value="difícil">Difícil</option>
+        <option value="dificil">Difícil</option>
       </select>
-      <label>Es USMLE?</label>
-      <select id="programarUsmle">
-        <option value="">Ambos</option>
-        <option value="sí">Sí</option>
-        <option value="no">No</option>
-      </select>
-      <label>Fecha y Hora:</label>
-      <input type="datetime-local" id="programarFecha">
-      <button type="submit">Programar Repaso</button>
-    </form>
-    <div id="calendario" style="margin-top:20px;">
-      <p>Calendario de repaso (clic en un evento para iniciar repaso)</p>
-      <ul id="listaEventos"></ul>
+      <label>
+        <input type="checkbox" id="progUSMLE"> Es USMLE?
+      </label>
+      <input type="datetime-local" id="progFecha">
+      <button onclick="programarRepaso()">Programar Repaso</button>
+      <div id="alertaProg" class="alert">¡Repaso programado!</div>
+      <div id="calendario" style="margin-top:20px;">
+        <!-- Aquí se podría implementar un calendario visual -->
+        <p>Calendario (próximamente)</p>
+      </div>
     </div>
-  </section>
+  </div>
+
+  <!-- Interfaz de estudio/repaso en pantalla completa -->
+  <div id="interfazPregunta" class="study-fullscreen" style="display:none;">
+    <div class="progress-bar" id="progressBar"></div>
+    <div class="study-content">
+      <div class="question-area" id="questionArea">
+        <!-- Se mostrará la pregunta y opciones -->
+      </div>
+      <div class="sidebar">
+        <button onclick="salirEstudio()" title="Salir">⏏️</button>
+        <button onclick="toggleModo()" title="Modo Día/Noche">🌗</button>
+        <button onclick="clasificarPregunta('facil')" title="Fácil">👍</button>
+        <button onclick="clasificarPregunta('medio')" title="Medio">👌</button>
+        <button onclick="clasificarPregunta('dificil')" title="Difícil">👎</button>
+        <button onclick="anteriorPregunta()" title="Anterior">⬅️</button>
+        <button onclick="siguientePregunta()" title="Siguiente">➡️</button>
+        <button onclick="cambiarCara()" title="Ver Respuesta">🔄</button>
+      </div>
+    </div>
+  </div>
 
   <script>
-    // URL de la Web App de Google Apps Script (reemplazar por la tuya)
-    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzPdBH3ANzuTecPYI2jvksJ6tyRcEVnfPMVYvACXK9JSYmRpa7zfbhE9IMBRCZLLe_m/exec";
-    
-    // Función para enviar datos al backend (Apps Script)
-    function enviarDatos(data, callback) {
-      fetch(APP_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-      .then(response => response.json())
-      .then(callback)
-      .catch(err => console.error(err));
+    /* VARIABLES GLOBALES */
+    let preguntas = [];              // Datos totales (cargados del Sheet)
+    let preguntasFiltradas = [];     // Preguntas según asignatura/tema (estudio o repaso)
+    let indiceActual = 0;
+    let modoOscuro = false;
+    let enEstudio = false;
+    let mostrandoRespuesta = false;
+
+    /* NAVEGACIÓN ENTRE SECCIONES */
+    function showSection(seccion) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(seccion).classList.add('active');
     }
-    
-    // Procesar el formulario de "Crear preguntas"
-    document.getElementById('grupoPreguntasForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const asignatura = document.getElementById('grupoAsignaturaInput').value.trim();
-      const tema = document.getElementById('grupoTemaInput').value.trim();
-      if (asignatura === "" || tema === "") {
-        alert("Debe escribir o seleccionar asignatura y tema.");
+
+    /* AGREGAR PREGUNTAS */
+    function agregarPreguntas() {
+      const asignatura = document.getElementById('asignatura').value.trim();
+      const tema = document.getElementById('tema').value.trim();
+      const texto = document.getElementById('preguntasInput').value.trim();
+      if (!asignatura || !tema || !texto) {
+        alert("Por favor, completa todos los campos.");
         return;
       }
-      let originalText = document.getElementById('grupoTexto').value.trim();
-      if (originalText === "") {
-        alert("Por favor, ingrese el grupo de preguntas.");
-        return;
-      }
-      // Transformar el texto: cada pregunta separada por ";" y campos por ","
-      let questionsArray = originalText.split(";").map(q => q.trim()).filter(q => q !== "");
-      let transformedQuestions = questionsArray.map(q => {
-        let fields = q.split(",").map(f => f.trim());
-        return fields.join(" | ");
-      });
-      let finalText = transformedQuestions.join("\n");
-      
-      document.getElementById('loadingMessage').style.display = "block";
-      
       const data = {
-        action: 'agregarGrupo',
+        action: 'agregar',
         asignatura: asignatura,
         tema: tema,
-        esUsmle: document.getElementById('grupoUsmle').checked ? "sí" : "",
-        texto: finalText
+        contenido: texto
       };
-      
-      enviarDatos(data, function(res) {
-        document.getElementById('loadingMessage').style.display = "none";
-        document.getElementById('grupoTexto').value = "";
-        const noti = document.getElementById('notificacion');
-        noti.style.display = "block";
-        setTimeout(() => { noti.style.display = "none"; }, 3000);
-        actualizarOpciones(); // Actualiza las opciones con los nuevos datos
-      });
-    });
-    
-    // Actualizar las opciones de asignatura y tema consultando el sheet
-    function actualizarOpciones() {
-      enviarDatos({ action: 'getPreguntas' }, function(res) {
-        let allPreguntas = res.preguntas || [];
-        let asignaturasSet = new Set();
-        let temasSet = new Set();
-        allPreguntas.forEach(q => {
-          if (q.asignatura) asignaturasSet.add(q.asignatura);
-          if (q.tema) temasSet.add(q.tema);
-        });
-        let asignaturas = Array.from(asignaturasSet);
-        let temas = Array.from(temasSet);
-        
-        // Actualizar datalists en la sección Crear preguntas
-        const asignaturaList = document.getElementById('asignaturaList');
-        const temaList = document.getElementById('temaList');
-        asignaturaList.innerHTML = "";
-        asignaturas.forEach(a => {
-          let opt = document.createElement("option");
-          opt.value = a;
-          asignaturaList.appendChild(opt);
-        });
-        temaList.innerHTML = "";
-        temas.forEach(t => {
-          let opt = document.createElement("option");
-          opt.value = t;
-          temaList.appendChild(opt);
-        });
-        
-        // Actualizar selects de las secciones Estudiar, Repasar y Programar
-        const selectAsignaturaIDs = ['estudioAsignatura', 'repasarAsignatura', 'programarAsignatura'];
-        const selectTemaIDs = ['estudioTema', 'repasarTema', 'programarTema'];
-        selectAsignaturaIDs.forEach(id => {
-          const select = document.getElementById(id);
-          select.innerHTML = '<option value="">-- Seleccionar --</option>';
-          asignaturas.forEach(a => {
-            let opt = document.createElement("option");
-            opt.value = a;
-            opt.textContent = a;
-            select.appendChild(opt);
-          });
-        });
-        selectTemaIDs.forEach(id => {
-          const select = document.getElementById(id);
-          select.innerHTML = '<option value="">-- Seleccionar --</option>';
-          temas.forEach(t => {
-            let opt = document.createElement("option");
-            opt.value = t;
-            opt.textContent = t;
-            select.appendChild(opt);
-          });
-        });
+      fetch('https://script.google.com/macros/s/AKfycbzSULc3_zGOTZvsPz5OXcvA5glttmlyx40Joa6LRCIl1SLMYcglNJq3bJwDOnuTxLOZ/exec', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(() => {
+        document.getElementById('preguntasInput').value = '';
+        document.getElementById('alertaExito').style.display = 'block';
+        setTimeout(() => { document.getElementById('alertaExito').style.display = 'none'; }, 2000);
+      }).catch(err => {
+        console.error(err);
+        alert("Error al agregar preguntas.");
       });
     }
-    
-    // Función para cargar los filtros (asignatura y tema) en Estudiar y Repasar
-    function cargarFiltros() {
-      actualizarOpciones();
-      alert("Filtros actualizados con las preguntas disponibles.");
+
+    /* CARGA DE DATOS DEL SHEET */
+    function cargarDatos(callback) {
+      fetch('YOUR_APPS_SCRIPT_WEB_APP_URL?action=obtener')
+        .then(res => res.json())
+        .then(data => { 
+          preguntas = data; 
+          if (callback) callback(); 
+        })
+        .catch(err => console.error(err));
     }
-    
-    // Funciones para iniciar la sesión de Estudio y Repaso
+
+    /* CARGA DE ASIGNATURAS EN LOS SELECTS */
+    function cargarAsignaturas(selectId) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = '<option value="">-- Selecciona Asignatura --</option>';
+      let asignaturas = [...new Set(preguntas.map(p => p.asignatura))];
+      asignaturas.forEach(a => {
+        let option = document.createElement('option');
+        option.value = a;
+        option.textContent = a;
+        select.appendChild(option);
+      });
+    }
+    function cargarTemas() {
+      const asignatura = document.getElementById('selectAsignatura').value;
+      const select = document.getElementById('selectTema');
+      select.innerHTML = '<option value="">-- Selecciona Tema --</option>';
+      let temas = [...new Set(preguntas.filter(p => p.asignatura === asignatura).map(p => p.tema))];
+      temas.forEach(t => {
+        let option = document.createElement('option');
+        option.value = t;
+        option.textContent = t;
+        select.appendChild(option);
+      });
+    }
+    function cargarTemasRepaso() {
+      const asignatura = document.getElementById('repasarAsignatura').value;
+      const select = document.getElementById('repasarTema');
+      select.innerHTML = '<option value="">-- Selecciona Tema --</option>';
+      let temas = [...new Set(preguntas.filter(p => p.asignatura === asignatura).map(p => p.tema))];
+      temas.forEach(t => {
+        let option = document.createElement('option');
+        option.value = t;
+        option.textContent = t;
+        select.appendChild(option);
+      });
+    }
+
+    /* AL INICIAR, CARGAMOS DATOS Y POBLAMOS LOS SELECTS */
+    window.onload = () => {
+      cargarDatos(() => {
+        cargarAsignaturas('selectAsignatura');
+        cargarAsignaturas('repasarAsignatura');
+        cargarAsignaturas('progAsignatura');
+      });
+    };
+
+    /* INICIAR ESTUDIO */
     function iniciarEstudio() {
-      const asignatura = document.getElementById('estudioAsignatura').value;
-      const tema = document.getElementById('estudioTema').value;
-      alert(`Iniciando estudio para: ${asignatura} - ${tema}`);
-      // Aquí se implementaría la carga y visualización de las preguntas de estudio
+      const asignatura = document.getElementById('selectAsignatura').value;
+      const tema = document.getElementById('selectTema').value;
+      if (!asignatura || !tema) {
+        alert("Selecciona asignatura y tema.");
+        return;
+      }
+      preguntasFiltradas = preguntas.filter(p => p.asignatura === asignatura && p.tema === tema);
+      if (preguntasFiltradas.length === 0) {
+        alert("No hay preguntas para esta asignatura y tema.");
+        return;
+      }
+      indiceActual = 0;
+      mostrarPregunta();
+      document.getElementById('interfazPregunta').style.display = 'block';
+      document.documentElement.requestFullscreen().catch(err => console.error(err));
+      enEstudio = true;
     }
-    
+
+    /* INICIAR REPASO (filtrado adicional por dificultad y USMLE) */
     function iniciarRepaso() {
       const asignatura = document.getElementById('repasarAsignatura').value;
       const tema = document.getElementById('repasarTema').value;
-      alert(`Iniciando repaso para: ${asignatura} - ${tema}`);
-      // Aquí se implementaría la carga y visualización de las preguntas de repaso
+      const dificultad = document.getElementById('repasarDificultad').value;
+      const esUSMLE = document.getElementById('repasarUSMLE').checked;
+      preguntasFiltradas = preguntas.filter(p => {
+        let cumple = true;
+        if (asignatura) cumple = cumple && p.asignatura === asignatura;
+        if (tema) cumple = cumple && p.tema === tema;
+        if (dificultad) cumple = cumple && p.clasificacion === dificultad;
+        if (esUSMLE) cumple = cumple && p.esUSMLE === "true";
+        return cumple;
+      });
+      if (preguntasFiltradas.length === 0) {
+        alert("No hay preguntas con esos criterios.");
+        return;
+      }
+      indiceActual = 0;
+      mostrarPregunta();
+      document.getElementById('interfazPregunta').style.display = 'block';
+      document.documentElement.requestFullscreen().catch(err => console.error(err));
+      enEstudio = true;
     }
-    
-    // Actualizar opciones al cargar la página
-    window.onload = actualizarOpciones;
+
+    /* MOSTRAR PREGUNTA ACTUAL */
+    function mostrarPregunta() {
+      if (indiceActual < 0 || indiceActual >= preguntasFiltradas.length) return;
+      const q = preguntasFiltradas[indiceActual];
+      mostrandoRespuesta = false;
+      let html = `<h3>Pregunta ${indiceActual + 1} de ${preguntasFiltradas.length}</h3>`;
+      html += `<p>${q.pregunta}</p>`;
+      // Si "respuesta" contiene comas se asume pregunta tipo test
+      if (q.respuesta.indexOf(',') > -1) {
+        let opciones = q.respuesta.split(',').map(opt => opt.trim());
+        opciones = shuffleArray(opciones);
+        html += `<div id="opciones">`;
+        opciones.forEach(opt => {
+          html += `<button onclick="seleccionarOpcion('${opt}')">${opt}</button>`;
+        });
+        html += `</div>`;
+        html += `<div id="feedback"></div>`;
+      } else {
+        // Flashcard: botón para ver/ocultar respuesta
+        html += `<button onclick="cambiarCara()">Mostrar Respuesta</button>`;
+        html += `<div id="respuesta" style="display:none;"><p>${q.respuesta}</p><p>${q.explicacion}</p></div>`;
+      }
+      document.getElementById('questionArea').innerHTML = html;
+      actualizarProgress();
+    }
+
+    /* CAMBIAR CARA EN FLASHCARD */
+    function cambiarCara() {
+      const respuestaDiv = document.getElementById('respuesta');
+      if (respuestaDiv) {
+        respuestaDiv.style.display = (respuestaDiv.style.display === 'none') ? 'block' : 'none';
+      }
+    }
+
+    /* SELECCIÓN DE OPCIÓN PARA PREGUNTAS TIPO TEST */
+    function seleccionarOpcion(opcion) {
+      const q = preguntasFiltradas[indiceActual];
+      const feedbackDiv = document.getElementById('feedback');
+      let opcionesOriginal = q.respuesta.split(',').map(opt => opt.trim());
+      if (opcionesOriginal[0] === opcion) {
+        feedbackDiv.innerHTML = '<p style="color:green;">¡Correcto!</p>';
+      } else {
+        feedbackDiv.innerHTML = '<p style="color:red;">Incorrecto. Intenta de nuevo.</p>';
+      }
+    }
+
+    /* NAVEGACIÓN ENTRE PREGUNTAS */
+    function siguientePregunta() {
+      if (indiceActual < preguntasFiltradas.length - 1) {
+        indiceActual++;
+        mostrarPregunta();
+      }
+    }
+    function anteriorPregunta() {
+      if (indiceActual > 0) {
+        indiceActual--;
+        mostrarPregunta();
+      }
+    }
+
+    /* SALIR DE LA INTERFAZ DE ESTUDIO/REPASO */
+    function salirEstudio() {
+      document.getElementById('interfazPregunta').style.display = 'none';
+      if (document.fullscreenElement) document.exitFullscreen();
+      enEstudio = false;
+    }
+
+    /* CAMBIAR MODO DÍA/NOCHE */
+    function toggleModo() {
+      modoOscuro = !modoOscuro;
+      document.body.classList.toggle('dark-mode', modoOscuro);
+    }
+
+    /* GUARDAR CLASIFICACIÓN DE LA PREGUNTA */
+    function clasificarPregunta(dificultad) {
+      const q = preguntasFiltradas[indiceActual];
+      const data = {
+        action: 'clasificar',
+        id: q.id,
+        clasificacion: dificultad
+      };
+      fetch('YOUR_APPS_SCRIPT_WEB_APP_URL', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).catch(err => console.error(err));
+      q.clasificacion = dificultad;
+      alert('Pregunta clasificada como ' + dificultad);
+    }
+
+    /* ACTUALIZAR BARRA DE PROGRESO */
+    function actualizarProgress() {
+      const progressBar = document.getElementById('progressBar');
+      const porcentaje = ((indiceActual + 1) / preguntasFiltradas.length) * 100;
+      progressBar.style.width = porcentaje + '%';
+    }
+
+    /* PROGRAMAR REPASO */
+    function programarRepaso() {
+      const asignatura = document.getElementById('progAsignatura').value;
+      const tema = document.getElementById('progTema').value;
+      const dificultad = document.getElementById('progDificultad').value;
+      const esUSMLE = document.getElementById('progUSMLE').checked;
+      const fecha = document.getElementById('progFecha').value;
+      if (!asignatura || !tema || !fecha) {
+        alert("Completa asignatura, tema y fecha.");
+        return;
+      }
+      const data = {
+        action: 'programar',
+        asignatura: asignatura,
+        tema: tema,
+        dificultad: dificultad,
+        esUSMLE: esUSMLE,
+        fecha: fecha
+      };
+      fetch('YOUR_APPS_SCRIPT_WEB_APP_URL', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(() => {
+        document.getElementById('alertaProg').style.display = 'block';
+        setTimeout(() => { document.getElementById('alertaProg').style.display = 'none'; }, 2000);
+      }).catch(err => console.error(err));
+    }
+
+    /* FUNCIÓN UTILITARIA: MEZCLAR ELEMENTOS DE UN ARRAY */
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
   </script>
 </body>
 </html>
