@@ -1,293 +1,750 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trivia Interactiva con Ruleta</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f0f8ff;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            margin-top: 50px;
-        }
-
-        .ruleta {
-            width: 300px;
-            height: 300px;
-            margin: 0 auto;
-            border: 5px solid #333;
-            border-radius: 50%;
-            position: relative;
-            background: conic-gradient(
-                #ffb6c1 0% 20%, #add8e6 20% 40%, #90ee90 40% 60%, #ffdead 60% 80%, #ffa07a 80% 100%
-            );
-            transition: transform 3s cubic-bezier(0.17, 0.67, 0.83, 0.67);
-        }
-
-        .flecha {
-            width: 0;
-            height: 0;
-            border-left: 20px solid transparent;
-            border-right: 20px solid transparent;
-            border-bottom: 30px solid #ff4500;
-            position: absolute;
-            top: -30px;
-            left: 140px;
-        }
-
-        .pregunta {
-            font-size: 20px;
-            margin: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            background: #fff;
-        }
-
-        .opciones {
-            margin-top: 20px;
-        }
-
-        .opcion {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .opcion:hover {
-            background-color: #218838;
-        }
-
-        button, input {
-            padding: 10px 20px;
-            font-size: 16px;
-            margin: 20px;
-            border: none;
-            border-radius: 5px;
-        }
-
-        button {
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        input {
-            border: 1px solid #ccc;
-        }
-
-        .historial-sidebar {
-            position: fixed;
-            right: -300px;
-            top: 0;
-            width: 300px;
-            height: 100%;
-            background-color: #fff;
-            box-shadow: -5px 0 5px rgba(0, 0, 0, 0.2);
-            overflow-y: auto;
-            transition: right 0.3s ease-in-out;
-            padding: 20px;
-        }
-
-        .historial-sidebar.visible {
-            right: 0;
-        }
-
-        .historial-header {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-
-        .historial ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .historial li {
-            font-size: 16px;
-            margin: 10px 0;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estudio de Preguntas y Flashcards</title>
+  <style>
+    /* Variables para modo día y noche */
+    :root {
+      --bg-color: #fff;
+      --text-color: #333;
+      --accent-color: #007BFF;
+      --panel-bg: #f0f0f0;
+    }
+    [data-theme="dark"] {
+      --bg-color: #121212;
+      --text-color: #eee;
+      --accent-color: #1E90FF;
+      --panel-bg: #1c1c1c;
+    }
+    /* Estilos globales */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: Arial, sans-serif;
+    }
+    /* Barra de navegación */
+    nav {
+      display: flex;
+      background-color: var(--panel-bg);
+      padding: 10px;
+      justify-content: space-around;
+    }
+    nav button {
+      background: none;
+      border: none;
+      color: var(--text-color);
+      font-size: 16px;
+      cursor: pointer;
+    }
+    nav button.active {
+      font-weight: bold;
+      border-bottom: 2px solid var(--accent-color);
+    }
+    /* Contenedor de vistas */
+    .view {
+      display: none;
+      padding: 20px;
+    }
+    .view.active {
+      display: block;
+    }
+    /* Estilos para formularios (Crear Preguntas) */
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    textarea {
+      resize: vertical;
+    }
+    button.primary {
+      background-color: var(--accent-color);
+      border: none;
+      color: #fff;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    /* Panel lateral para las secciones Estudiar y Repasar (estilo TikTok) */
+    .side-panel {
+      position: fixed;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 100;
+    }
+    .side-panel button {
+      background: var(--panel-bg);
+      border: none;
+      padding: 10px;
+      border-radius: 50%;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+    }
+    .side-panel button:hover {
+      background: var(--accent-color);
+      color: #fff;
+    }
+    /* Interfaz de pregunta en pantalla completa */
+    .question-interface {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+      padding: 20px;
+    }
+    .question-text {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .options button {
+      padding: 10px;
+      font-size: 1em;
+      cursor: pointer;
+      border: 1px solid var(--accent-color);
+      background: none;
+      color: var(--text-color);
+    }
+    .options button.correct {
+      background-color: #28a745;
+      color: #fff;
+    }
+    .options button.incorrect {
+      background-color: #dc3545;
+      color: #fff;
+    }
+    /* Estilos para el calendario de Programar Repaso */
+    .calendar {
+      margin-top: 20px;
+    }
+    .calendar table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .calendar th, .calendar td {
+      border: 1px solid var(--panel-bg);
+      padding: 10px;
+      text-align: center;
+    }
+    .calendar td.event {
+      background-color: var(--accent-color);
+      color: #fff;
+      cursor: pointer;
+    }
+  </style>
 </head>
-<body>
-    <div id="inicio-container" class="container">
-        <h1>Bienvenido a la Trivia Interactiva</h1>
-        <p>Ingresa tu nombre para comenzar:</p>
-        <input type="text" id="nombreUsuario" placeholder="Tu nombre" />
-        <button onclick="iniciarTrivia()">Comenzar</button>
+<body data-theme="light">
+  <!-- Navegación -->
+  <nav>
+    <button id="navCrear" class="active">Crear Preguntas</button>
+    <button id="navEstudiar">Estudiar</button>
+    <button id="navRepasar">Repasar</button>
+    <button id="navProgramar">Programar Repaso</button>
+  </nav>
+
+  <!-- Sección: Crear Preguntas -->
+  <div id="crear" class="view active">
+    <h2>Crear Preguntas</h2>
+    <form id="formCrear">
+      <div class="form-group">
+        <label for="asignatura">Asignatura</label>
+        <input type="text" id="asignatura" name="asignatura" placeholder="Ej. Biología">
+      </div>
+      <div class="form-group">
+        <label for="tema">Tema</label>
+        <input type="text" id="tema" name="tema" placeholder="Ej. Genética">
+      </div>
+      <div class="form-group">
+        <label for="usmle">Es USMLE?</label>
+        <input type="checkbox" id="usmle" name="usmle">
+      </div>
+      <div class="form-group">
+        <label for="pregunta">Pregunta</label>
+        <textarea id="pregunta" name="pregunta" rows="3" placeholder="Enunciado de la pregunta (usa ** para negrita)"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="respuesta">Respuesta</label>
+        <textarea id="respuesta" name="respuesta" rows="2" placeholder="Enunciado de la respuesta"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="explicacion">Explicación</label>
+        <textarea id="explicacion" name="explicacion" rows="3" placeholder="Justificado y con **negritas**"></textarea>
+      </div>
+      <button type="submit" class="primary">Guardar Pregunta</button>
+    </form>
+    <hr>
+    <h3>Carga Masiva con Ayuda de IA</h3>
+    <p>Pega el grupo de preguntas en el siguiente formato (flashcards o test):</p>
+    <textarea id="cargaMasiva" rows="6" placeholder="Formato: Asignatura, Tema, [USMLE], pregunta, respuesta, explicación o para test: pregunta, [opción correcta], [opción 2], …, explicación"></textarea>
+    <button id="btnCargaMasiva" class="primary">Agregar Grupo de Preguntas</button>
+  </div>
+
+  <!-- Sección: Estudiar -->
+  <div id="estudiar" class="view">
+    <h2>Estudiar</h2>
+    <div id="selectorEstudio">
+      <label for="selAsignatura">Asignatura:</label>
+      <select id="selAsignatura"></select>
+      <label for="selTema">Tema:</label>
+      <select id="selTema"></select>
+      <button id="btnCargarMazo" class="primary">Cargar Mazo</button>
     </div>
-
-    <div id="trivia-container" class="container" style="display: none;">
-        <h1>Trivia Interactiva</h1>
-        <p id="usuario"></p>
-        <div class="ruleta-container">
-            <div class="ruleta" id="ruleta"></div>
-            <div class="flecha"></div>
-        </div>
-        <button id="btnGirar" onclick="girarRuleta()">Girar Ruleta</button>
-        <div id="pregunta-container" class="pregunta" style="display: none;"></div>
-        <div id="opciones-container" class="opciones" style="display: none;"></div>
-        <div id="resultado" style="display: none; font-size: 24px; margin-top: 20px;"></div>
+    <div id="interfazPregunta" class="question-interface" style="display:none;">
+      <div class="question-text" id="questionText">La pregunta se cargará aquí</div>
+      <div class="options" id="optionsContainer">
+        <!-- Opciones se agregarán dinámicamente -->
+      </div>
     </div>
-
-    <div id="historial-sidebar" class="historial-sidebar">
-        <div class="historial-header">Historial de Jugadores</div>
-        <ul id="historial"></ul>
+    <!-- Panel lateral de acciones -->
+    <div class="side-panel" id="panelEstudio" style="display:none;">
+      <button id="btnSalir" title="Salir">&#x274C;</button>
+      <button id="btnModo" title="Cambiar modo Día/Noche">&#9788;</button>
+      <button id="btnFacil" title="Fácil">F</button>
+      <button id="btnMedio" title="Medio">M</button>
+      <button id="btnDificil" title="Difícil">D</button>
+      <button id="btnAnterior" title="Pregunta Anterior">&#9664;</button>
+      <button id="btnSiguiente" title="Siguiente Pregunta">&#9654;</button>
+      <button id="btnVoltear" title="Voltear Tarjeta">&#8635;</button>
     </div>
+  </div>
 
-    <script>
-        const preguntas = [
-            {
-                pregunta: "¿Cuál es la capital de Francia?",
-                opciones: ["Madrid", "París", "Londres", "Roma"],
-                correcta: "París"
-            },
-            {
-                pregunta: "¿En qué año llegó el hombre a la Luna?",
-                opciones: ["1969", "1972", "1959", "1980"],
-                correcta: "1969"
-            },
-            {
-                pregunta: "¿Cuál es el océano más grande del mundo?",
-                opciones: ["Atlántico", "Índico", "Pacífico", "Ártico"],
-                correcta: "Pacífico"
-            },
-            {
-                pregunta: "¿Quién escribió 'Cien años de soledad'?",
-                opciones: ["Pablo Neruda", "Gabriel García Márquez", "Mario Vargas Llosa", "Julio Cortázar"],
-                correcta: "Gabriel García Márquez"
-            },
-            {
-                pregunta: "¿Cuál es el elemento químico H?",
-                opciones: ["Helio", "Hidrógeno", "Hierro", "Hafnio"],
-                correcta: "Hidrógeno"
-            }
-        ];
+  <!-- Sección: Repasar -->
+  <div id="repasar" class="view">
+    <h2>Repasar</h2>
+    <div id="selectorRepaso">
+      <label for="repasarAsignatura">Asignatura:</label>
+      <select id="repasarAsignatura"></select>
+      <label for="repasarTema">Tema:</label>
+      <select id="repasarTema"></select>
+      <label for="repasarDificultad">Dificultad:</label>
+      <select id="repasarDificultad">
+        <option value="">Todas</option>
+        <option value="fácil">Fácil</option>
+        <option value="medio">Medio</option>
+        <option value="difícil">Difícil</option>
+      </select>
+      <label for="repasarUSMLE">USMLE:</label>
+      <select id="repasarUSMLE">
+        <option value="">Ambos</option>
+        <option value="sí">Sí</option>
+        <option value="no">No</option>
+      </select>
+      <button id="btnCargarRepaso" class="primary">Cargar Repaso</button>
+    </div>
+    <div id="interfazRepaso" class="question-interface" style="display:none;">
+      <div class="question-text" id="repasarQuestionText">La pregunta se cargará aquí</div>
+      <div class="options" id="repasarOptionsContainer">
+        <!-- Opciones se agregarán dinámicamente -->
+      </div>
+    </div>
+    <div class="side-panel" id="panelRepaso" style="display:none;">
+      <button id="btnSalirRepaso" title="Salir">&#x274C;</button>
+      <button id="btnModoRepaso" title="Cambiar modo Día/Noche">&#9788;</button>
+      <button id="btnFacilRepaso" title="Fácil">F</button>
+      <button id="btnMedioRepaso" title="Medio">M</button>
+      <button id="btnDificilRepaso" title="Difícil">D</button>
+      <button id="btnAnteriorRepaso" title="Pregunta Anterior">&#9664;</button>
+      <button id="btnSiguienteRepaso" title="Siguiente Pregunta">&#9654;</button>
+      <button id="btnVoltearRepaso" title="Voltear Tarjeta">&#8635;</button>
+    </div>
+  </div>
 
-        let nombreUsuario = "";
-        let anguloActual = 0;
-        let preguntasRestantes = 5;
-        let puntaje = 0;
+  <!-- Sección: Programar Repaso -->
+  <div id="programar" class="view">
+    <h2>Programar Repaso</h2>
+    <div id="selectorProgramar">
+      <label for="progAsignatura">Asignatura:</label>
+      <select id="progAsignatura"></select>
+      <label for="progTema">Tema:</label>
+      <select id="progTema"></select>
+      <label for="progDificultad">Dificultad:</label>
+      <select id="progDificultad">
+        <option value="">Todas</option>
+        <option value="fácil">Fácil</option>
+        <option value="medio">Medio</option>
+        <option value="difícil">Difícil</option>
+      </select>
+      <label for="progUSMLE">USMLE:</label>
+      <select id="progUSMLE">
+        <option value="">Ambos</option>
+        <option value="sí">Sí</option>
+        <option value="no">No</option>
+      </select>
+      <button id="btnCargarProgramar" class="primary">Cargar Preguntas</button>
+    </div>
+    <div class="calendar" id="calendario">
+      <table>
+        <thead>
+          <tr>
+            <th>Lun</th>
+            <th>Mar</th>
+            <th>Mié</th>
+            <th>Jue</th>
+            <th>Vie</th>
+            <th>Sáb</th>
+            <th>Dom</th>
+          </tr>
+        </thead>
+        <tbody id="tablaCalendario">
+          <!-- Se generará dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-        function iniciarTrivia() {
-            const inputNombre = document.getElementById("nombreUsuario").value.trim();
-            if (!inputNombre) {
-                alert("Por favor, ingresa tu nombre.");
-                return;
-            }
+  <script>
+    /***************************************
+     * Variables Globales y Configuración  *
+     ***************************************/
+    // URL de tu Web App. Reemplaza "your_script_id" con el id real obtenido al desplegar el App Script.
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycby0k3PXiebeBoXuhrxJfXM-CqYa2PJPxmcK5_WvJldUHbbQWnwDrsH0sgfbRHCHKKRM/exec';
+    let questions = [];            // Todas las preguntas cargadas desde el Sheet
+    let currentQuestions = [];     // Preguntas filtradas para la sección actual
+    let currentQuestionIndex = 0;  // Índice de la pregunta actual
+    let isTestMode = false;        // Determina si es pregunta tipo test (opciones múltiples)
 
-            nombreUsuario = inputNombre;
-            document.getElementById("usuario").textContent = `Jugador: ${nombreUsuario}`;
-            document.getElementById("inicio-container").style.display = "none";
-            document.getElementById("trivia-container").style.display = "block";
-        }
+    /***************************************
+     * Funciones de Utilidad y Temas       *
+     ***************************************/
+    // Cambiar de modo día/noche
+    function toggleTheme() {
+      const body = document.body;
+      const currentTheme = body.getAttribute('data-theme');
+      body.setAttribute('data-theme', currentTheme === 'light' ? 'dark' : 'light');
+      localStorage.setItem('theme', body.getAttribute('data-theme'));
+    }
+    // Cargar tema guardado
+    function loadTheme() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.body.setAttribute('data-theme', savedTheme);
+    }
+    // Formatear texto para resaltar **negritas**
+    function formatText(text) {
+      return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    }
+    // Mezclar (shuffle) un array
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
 
-        function girarRuleta() {
-            if (preguntasRestantes === 0) {
-                guardarPuntaje();
-                mostrarHistorial();
-                return;
-            }
+    /***************************************
+     * Navegación entre Vistas             *
+     ***************************************/
+    function showView(viewId) {
+      document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+      if (viewId === 'crear') document.getElementById('navCrear').classList.add('active');
+      else if (viewId === 'estudiar') document.getElementById('navEstudiar').classList.add('active');
+      else if (viewId === 'repasar') document.getElementById('navRepasar').classList.add('active');
+      else if (viewId === 'programar') document.getElementById('navProgramar').classList.add('active');
+    }
+    document.getElementById('navCrear').addEventListener('click', () => showView('crear'));
+    document.getElementById('navEstudiar').addEventListener('click', () => showView('estudiar'));
+    document.getElementById('navRepasar').addEventListener('click', () => showView('repasar'));
+    document.getElementById('navProgramar').addEventListener('click', () => showView('programar'));
 
-            document.getElementById("btnGirar").disabled = true;
+    /***************************************
+     * Sección: Crear Preguntas             *
+     ***************************************/
+    document.getElementById('formCrear').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const data = {
+        asignatura: document.getElementById('asignatura').value,
+        tema: document.getElementById('tema').value,
+        usmle: document.getElementById('usmle').checked ? 'sí' : 'no',
+        pregunta: document.getElementById('pregunta').value,
+        respuesta: document.getElementById('respuesta').value,
+        explicacion: document.getElementById('explicacion').value
+      };
+      fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'crear', data: data })
+      }).then(() => {
+        alert('Pregunta guardada');
+        document.getElementById('formCrear').reset();
+      }).catch(err => {
+        console.error(err);
+        alert('Error al guardar la pregunta');
+      });
+    });
 
-            const giro = Math.floor(Math.random() * 360) + 720;
-            anguloActual += giro;
-            document.getElementById("ruleta").style.transform = `rotate(${anguloActual}deg)`;
+    document.getElementById('btnCargaMasiva').addEventListener('click', function() {
+      const text = document.getElementById('cargaMasiva').value;
+      const lines = text.split('\n').filter(line => line.trim() !== '');
+      const questionsData = lines.map(line => {
+        const parts = line.split(',');
+        if(parts.length < 4) return null;
+        let type = parts.length > 4 ? 'test' : 'flashcard';
+        return {
+          asignatura: parts[0].trim(),
+          tema: parts[1].trim(),
+          usmle: parts[2].trim().toLowerCase() === 'sí' ? 'sí' : 'no',
+          pregunta: parts[3].trim(),
+          opciones: type === 'test' ? parts.slice(4, parts.length - 1).map(p => p.trim()) : [],
+          respuesta: parts[4].trim(),
+          explicacion: parts[parts.length - 1].trim(),
+          type: type
+        };
+      }).filter(q => q !== null);
+      fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cargaMasiva', data: questionsData })
+      }).then(() => {
+        alert('Grupo de preguntas agregado');
+        document.getElementById('cargaMasiva').value = '';
+      }).catch(err => {
+        console.error(err);
+        alert('Error al agregar grupo de preguntas');
+      });
+    });
 
-            setTimeout(() => {
-                const preguntaIndex = Math.floor(Math.random() * preguntas.length);
-                const preguntaSeleccionada = preguntas.splice(preguntaIndex, 1)[0];
-                mostrarPregunta(preguntaSeleccionada);
-            }, 3000);
-        }
-
-        function mostrarPregunta(preguntaObj) {
-            document.getElementById("pregunta-container").textContent = preguntaObj.pregunta;
-            document.getElementById("pregunta-container").style.display = "block";
-
-            const opcionesContainer = document.getElementById("opciones-container");
-            opcionesContainer.innerHTML = "";
-            preguntaObj.opciones.forEach(opcion => {
-                const btn = document.createElement("button");
-                btn.className = "opcion";
-                btn.textContent = opcion;
-                btn.onclick = () => verificarRespuesta(opcion, preguntaObj.correcta);
-                opcionesContainer.appendChild(btn);
+    /***************************************
+     * Función para Cargar Preguntas        *
+     ***************************************/
+    function cargarPreguntas(callback, filters = {}) {
+      // Construir URL con filtros opcionales
+      let url = scriptUrl + "?action=leer";
+      if (filters.asignatura) url += "&asignatura=" + encodeURIComponent(filters.asignatura);
+      if (filters.tema) url += "&tema=" + encodeURIComponent(filters.tema);
+      if (filters.dificultad) url += "&dificultad=" + encodeURIComponent(filters.dificultad);
+      if (filters.usmle) url += "&usmle=" + encodeURIComponent(filters.usmle);
+      
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          questions = data;
+          if (Object.keys(filters).length) {
+            currentQuestions = questions.filter(q => {
+              let ok = true;
+              if (filters.asignatura && q.Asignatura !== filters.asignatura) ok = false;
+              if (filters.tema && q.Tema !== filters.tema) ok = false;
+              if (filters.dificultad && q.Clasificación !== filters.dificultad) ok = false;
+              if (filters.usmle && q["Es USMLE?"] !== filters.usmle) ok = false;
+              return ok;
             });
-            opcionesContainer.style.display = "block";
+          } else {
+            currentQuestions = questions;
+          }
+          callback();
+        })
+        .catch(err => {
+          console.error(err);
+          alert('Error al cargar las preguntas');
+        });
+    }
+
+    function initSelectores() {
+      const asignaturas = [...new Set(questions.map(q => q.Asignatura))];
+      const temas = [...new Set(questions.map(q => q.Tema))];
+      const populateSelect = (selectId, items) => {
+        const select = document.getElementById(selectId);
+        select.innerHTML = '<option value="">Selecciona</option>';
+        items.forEach(item => {
+          const option = document.createElement('option');
+          option.value = item;
+          option.textContent = item;
+          select.appendChild(option);
+        });
+      };
+      populateSelect('selAsignatura', asignaturas);
+      populateSelect('selTema', temas);
+      populateSelect('repasarAsignatura', asignaturas);
+      populateSelect('repasarTema', temas);
+      populateSelect('progAsignatura', asignaturas);
+      populateSelect('progTema', temas);
+    }
+
+    /***************************************
+     * Sección: Estudiar                   *
+     ***************************************/
+    document.getElementById('btnCargarMazo').addEventListener('click', function() {
+      const asignatura = document.getElementById('selAsignatura').value;
+      const tema = document.getElementById('selTema').value;
+      if (!asignatura || !tema) {
+        alert('Selecciona asignatura y tema');
+        return;
+      }
+      cargarPreguntas(() => {
+        currentQuestions = questions.filter(q => q.Asignatura === asignatura && q.Tema === tema);
+        if (currentQuestions.length === 0) {
+          alert('No hay preguntas para el mazo seleccionado');
+          return;
         }
-
-        function verificarRespuesta(respuesta, correcta) {
-            if (respuesta === correcta) {
-                puntaje++;
-                alert("¡Respuesta correcta!");
-            } else {
-                alert("Respuesta incorrecta.");
-            }
-
-            preguntasRestantes--;
-
-            if (preguntasRestantes > 0) {
-                document.getElementById("pregunta-container").style.display = "none";
-                document.getElementById("opciones-container").style.display = "none";
-                document.getElementById("btnGirar").disabled = false;
-            } else {
-                guardarPuntaje();
-                mostrarHistorial();
-            }
+        currentQuestionIndex = 0;
+        showQuestion();
+        document.getElementById('interfazPregunta').style.display = 'block';
+        document.getElementById('panelEstudio').style.display = 'flex';
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen();
         }
+      }, { asignatura, tema });
+    });
 
-        function guardarPuntaje() {
-            const historial = JSON.parse(localStorage.getItem("historialJugadores")) || [];
-            historial.push({ nombre: nombreUsuario, puntaje: puntaje });
-            localStorage.setItem("historialJugadores", JSON.stringify(historial));
+    function showQuestion() {
+      const q = currentQuestions[currentQuestionIndex];
+      document.getElementById('questionText').innerHTML = formatText(q.Pregunta);
+      const optionsContainer = document.getElementById('optionsContainer');
+      optionsContainer.innerHTML = '';
+      if (q.opciones && q.opciones.length > 0) {
+        isTestMode = true;
+        let options = [...q.opciones];
+        options.unshift(q.Respuesta);
+        options = shuffle(options);
+        options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.textContent = opt;
+          btn.addEventListener('click', () => {
+            if (opt === q.Respuesta) btn.classList.add('correct');
+            else btn.classList.add('incorrect');
+          });
+          optionsContainer.appendChild(btn);
+        });
+      } else {
+        isTestMode = false;
+        const btnVoltear = document.createElement('button');
+        btnVoltear.textContent = 'Mostrar Respuesta';
+        btnVoltear.addEventListener('click', () => {
+          alert('Respuesta: ' + q.Respuesta + '\nExplicación: ' + q.Explicación);
+        });
+        optionsContainer.appendChild(btnVoltear);
+      }
+    }
+
+    document.getElementById('btnSalir').addEventListener('click', function() {
+      document.getElementById('interfazPregunta').style.display = 'none';
+      document.getElementById('panelEstudio').style.display = 'none';
+      if (document.exitFullscreen) document.exitFullscreen();
+    });
+    document.getElementById('btnModo').addEventListener('click', toggleTheme);
+    document.getElementById('btnAnterior').addEventListener('click', function() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        showQuestion();
+      }
+    });
+    document.getElementById('btnSiguiente').addEventListener('click', function() {
+      if (currentQuestionIndex < currentQuestions.length - 1) {
+        currentQuestionIndex++;
+        showQuestion();
+      }
+    });
+    document.getElementById('btnVoltear').addEventListener('click', function() {
+      const q = currentQuestions[currentQuestionIndex];
+      alert('Respuesta: ' + q.Respuesta + '\nExplicación: ' + q.Explicación);
+    });
+    document.getElementById('btnFacil').addEventListener('click', function() {
+      actualizarClasificacion(qId(), 'fácil');
+    });
+    document.getElementById('btnMedio').addEventListener('click', function() {
+      actualizarClasificacion(qId(), 'medio');
+    });
+    document.getElementById('btnDificil').addEventListener('click', function() {
+      actualizarClasificacion(qId(), 'difícil');
+    });
+    function qId() {
+      return currentQuestions[currentQuestionIndex].id;
+    }
+
+    function actualizarClasificacion(id, clasificacion) {
+      fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'actualizar', id: id, clasificacion: clasificacion })
+      }).then(() => {
+        alert('Clasificación actualizada a ' + clasificacion);
+      }).catch(err => {
+        console.error(err);
+        alert('Error al actualizar clasificación');
+      });
+    }
+
+    /***************************************
+     * Sección: Repasar                     *
+     ***************************************/
+    document.getElementById('btnCargarRepaso').addEventListener('click', function() {
+      const asignatura = document.getElementById('repasarAsignatura').value;
+      const tema = document.getElementById('repasarTema').value;
+      const dificultad = document.getElementById('repasarDificultad').value;
+      const usmle = document.getElementById('repasarUSMLE').value;
+      cargarPreguntas(() => {
+        currentQuestions = questions.filter(q => {
+          let ok = true;
+          if (asignatura && q.Asignatura !== asignatura) ok = false;
+          if (tema && q.Tema !== tema) ok = false;
+          if (dificultad && q.Clasificación !== dificultad) ok = false;
+          if (usmle && q["Es USMLE?"] !== usmle) ok = false;
+          return ok;
+        });
+        if (currentQuestions.length === 0) {
+          alert('No hay preguntas con los filtros seleccionados');
+          return;
         }
-
-        function mostrarHistorial() {
-            const historial = JSON.parse(localStorage.getItem("historialJugadores")) || [];
-            const historialContainer = document.getElementById("historial");
-            historialContainer.innerHTML = "";
-            historial.forEach(jugador => {
-                const li = document.createElement("li");
-                li.textContent = `${jugador.nombre}: ${jugador.puntaje} / 5`;
-                historialContainer.appendChild(li);
-            });
+        currentQuestionIndex = 0;
+        showRepasarQuestion();
+        document.getElementById('interfazRepaso').style.display = 'block';
+        document.getElementById('panelRepaso').style.display = 'flex';
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen();
         }
+      }, { asignatura, tema, dificultad, usmle });
+    });
 
-        function toggleHistorial() {
-            const sidebar = document.getElementById("historial-sidebar");
-            if (sidebar.classList.contains("visible")) {
-                sidebar.classList.remove("visible");
-            } else {
-                const codigo = prompt("Ingresa el código para ver el historial:");
-                if (codigo === "123456") {
-                    mostrarHistorial();
-                    sidebar.classList.add("visible");
-                } else {
-                    alert("Código incorrecto.");
-                }
-            }
+    function showRepasarQuestion() {
+      const q = currentQuestions[currentQuestionIndex];
+      document.getElementById('repasarQuestionText').innerHTML = formatText(q.Pregunta);
+      const container = document.getElementById('repasarOptionsContainer');
+      container.innerHTML = '';
+      if (q.opciones && q.opciones.length > 0) {
+        isTestMode = true;
+        let options = [...q.opciones];
+        options.unshift(q.Respuesta);
+        options = shuffle(options);
+        options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.textContent = opt;
+          btn.addEventListener('click', () => {
+            if (opt === q.Respuesta) btn.classList.add('correct');
+            else btn.classList.add('incorrect');
+          });
+          container.appendChild(btn);
+        });
+      } else {
+        isTestMode = false;
+        const btn = document.createElement('button');
+        btn.textContent = 'Mostrar Respuesta';
+        btn.addEventListener('click', () => {
+          alert('Respuesta: ' + q.Respuesta + '\nExplicación: ' + q.Explicación);
+        });
+        container.appendChild(btn);
+      }
+    }
+
+    document.getElementById('btnSalirRepaso').addEventListener('click', function() {
+      document.getElementById('interfazRepaso').style.display = 'none';
+      document.getElementById('panelRepaso').style.display = 'none';
+      if (document.exitFullscreen) document.exitFullscreen();
+    });
+    document.getElementById('btnModoRepaso').addEventListener('click', toggleTheme);
+    document.getElementById('btnAnteriorRepaso').addEventListener('click', function() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        showRepasarQuestion();
+      }
+    });
+    document.getElementById('btnSiguienteRepaso').addEventListener('click', function() {
+      if (currentQuestionIndex < currentQuestions.length - 1) {
+        currentQuestionIndex++;
+        showRepasarQuestion();
+      }
+    });
+    document.getElementById('btnVoltearRepaso').addEventListener('click', function() {
+      const q = currentQuestions[currentQuestionIndex];
+      alert('Respuesta: ' + q.Respuesta + '\nExplicación: ' + q.Explicación);
+    });
+    document.getElementById('btnFacilRepaso').addEventListener('click', function() {
+      actualizarClasificacion(qId(), 'fácil');
+    });
+    document.getElementById('btnMedioRepaso').addEventListener('click', function() {
+      actualizarClasificacion(qId(), 'medio');
+    });
+    document.getElementById('btnDificilRepaso').addEventListener('click', function() {
+      actualizarClasificacion(qId(), 'difícil');
+    });
+
+    /***************************************
+     * Sección: Programar Repaso             *
+     ***************************************/
+    document.getElementById('btnCargarProgramar').addEventListener('click', function() {
+      const asignatura = document.getElementById('progAsignatura').value;
+      const tema = document.getElementById('progTema').value;
+      const dificultad = document.getElementById('progDificultad').value;
+      const usmle = document.getElementById('progUSMLE').value;
+      cargarPreguntas(() => {
+        currentQuestions = questions.filter(q => {
+          let ok = true;
+          if (asignatura && q.Asignatura !== asignatura) ok = false;
+          if (tema && q.Tema !== tema) ok = false;
+          if (dificultad && q.Clasificación !== dificultad) ok = false;
+          if (usmle && q["Es USMLE?"] !== usmle) ok = false;
+          return ok;
+        });
+        if (currentQuestions.length === 0) {
+          alert('No hay preguntas para estos filtros');
+          return;
         }
+        generarCalendario();
+      });
+    });
 
-        mostrarHistorial();
-    </script>
-    <button onclick="toggleHistorial()" style="position: fixed; bottom: 20px; right: 20px;">Historial</button>
+    function generarCalendario() {
+      const today = new Date();
+      const startDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      const startWeekDay = startDay.getDay() || 7; // Convertir domingo a 7
+      const totalDays = endDay.getDate();
+      const tableBody = document.getElementById('tablaCalendario');
+      tableBody.innerHTML = '';
+      let row = document.createElement('tr');
+      for (let i = 1; i < startWeekDay; i++) {
+        let cell = document.createElement('td');
+        row.appendChild(cell);
+      }
+      for (let day = 1; day <= totalDays; day++) {
+        if (row.children.length === 7) {
+          tableBody.appendChild(row);
+          row = document.createElement('tr');
+        }
+        let cell = document.createElement('td');
+        cell.textContent = day;
+        cell.classList.add('event');
+        cell.addEventListener('click', function() {
+          alert('Abrir repaso programado para ' + day);
+        });
+        row.appendChild(cell);
+      }
+      while (row.children.length < 7) {
+        let cell = document.createElement('td');
+        row.appendChild(cell);
+      }
+      tableBody.appendChild(row);
+    }
+
+    /***************************************
+     * Inicialización General              *
+     ***************************************/
+    loadTheme();
+    cargarPreguntas(initSelectores);
+  </script>
 </body>
 </html>
