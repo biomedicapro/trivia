@@ -6,21 +6,85 @@
   <title>Estudio Interactivo - Preguntas y Flashcards</title>
   <style>
     /* Estilos generales */
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-    body { background-color: #f5f5f5; color: #333; line-height: 1.6; }
-    header { background-color: #fff; padding: 10px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
-    header nav { display: flex; justify-content: space-around; }
-    header nav a { text-decoration: none; color: #333; padding: 8px 12px; border-radius: 4px; transition: background-color 0.3s; }
-    header nav a:hover, header nav a.active { background-color: #ddd; }
-    .section { display: none; padding: 20px; }
-    .section.active { display: block; }
-    form { max-width: 800px; margin: 0 auto; }
-    form select, form input, form textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
-    form button { padding: 10px 20px; border: none; background-color: #333; color: #fff; font-size: 16px; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
-    form button:hover { background-color: #555; }
-    #loadingMessage, #notificacion { text-align: center; margin-top: 10px; font-weight: bold; }
-    #loadingMessage { color: #555; }
-    #notificacion { color: green; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+    body {
+      background-color: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+    header {
+      background-color: #fff;
+      padding: 10px 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    header nav {
+      display: flex;
+      justify-content: space-around;
+    }
+    header nav a {
+      text-decoration: none;
+      color: #333;
+      padding: 8px 12px;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    header nav a:hover, header nav a.active {
+      background-color: #ddd;
+    }
+    /* Contenedores de sección */
+    .section {
+      display: none;
+      padding: 20px;
+    }
+    .section.active {
+      display: block;
+    }
+    /* Formularios y botones */
+    form {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    form input, form select, form textarea, form input[type="datetime-local"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    form button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #333;
+      color: #fff;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    form button:hover {
+      background-color: #555;
+    }
+    /* Notificaciones y mensajes de cargue */
+    #loadingMessage, #notificacion {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    #loadingMessage {
+      color: #555;
+    }
+    #notificacion {
+      color: green;
+    }
   </style>
 </head>
 <body>
@@ -29,6 +93,7 @@
       <a href="#" class="nav-link active" data-section="crear">Crear preguntas</a>
       <a href="#" class="nav-link" data-section="estudiar">Estudiar</a>
       <a href="#" class="nav-link" data-section="repasar">Repasar</a>
+      <a href="#" class="nav-link" data-section="programar">Programar repaso</a>
     </nav>
   </header>
 
@@ -36,18 +101,25 @@
   <section id="crear" class="section active">
     <h2>Pegar Grupo de Preguntas</h2>
     <form id="grupoPreguntasForm">
-      <label>Asignatura:</label>
+      <label>Asignatura (obligatorio):</label>
       <input type="text" id="grupoAsignaturaInput" list="asignaturaList" placeholder="Escribe o selecciona asignatura">
       <datalist id="asignaturaList"></datalist>
-
-      <label>Tema:</label>
+      
+      <label>Tema (obligatorio):</label>
       <input type="text" id="grupoTemaInput" list="temaList" placeholder="Escribe o selecciona tema">
       <datalist id="temaList"></datalist>
-
+      
       <label>Es USMLE?</label>
       <input type="checkbox" id="grupoUsmle">
-      <label>Pega las preguntas (separadas por comas y punto y coma ";")</label>
-      <textarea id="grupoTexto" rows="6"></textarea>
+      
+      <label>
+        Pega las preguntas. Formato:<br>
+        • Cada pregunta: campos separados por comas (Pregunta, Respuesta, Explicación).<br>
+        • Separa cada pregunta con punto y coma (“;”).<br>
+        Ejemplo:<br>
+        ¿Función de la hemoglobina?, Transportar oxígeno, La hemoglobina transporta oxígeno; ¿Qué estructura regula la homeostasis?, Hipotálamo, El hipotálamo regula el equilibrio.
+      </label>
+      <textarea id="grupoTexto" rows="6" placeholder="Ingresa aquí el grupo de preguntas"></textarea>
       <button type="submit">Agregar Grupo de Preguntas</button>
       <div id="loadingMessage" style="display:none;">Cargando...</div>
       <div id="notificacion" style="display:none;">¡Grupo de preguntas agregado!</div>
@@ -80,9 +152,42 @@
     </div>
   </section>
 
-  <script>
-    const APP_SCRIPT_URL = "YOUR_APPS_SCRIPT_URL_HERE";
+  <!-- SECCIÓN PROGRAMAR REPASO -->
+  <section id="programar" class="section">
+    <h2>Programar Repaso</h2>
+    <form id="programarForm">
+      <label>Asignatura:</label>
+      <select id="programarAsignatura"></select>
+      <label>Tema:</label>
+      <select id="programarTema"></select>
+      <label>Clasificación:</label>
+      <select id="programarClasificacion">
+        <option value="">Todas</option>
+        <option value="fácil">Fácil</option>
+        <option value="medio">Medio</option>
+        <option value="difícil">Difícil</option>
+      </select>
+      <label>Es USMLE?</label>
+      <select id="programarUsmle">
+        <option value="">Ambos</option>
+        <option value="sí">Sí</option>
+        <option value="no">No</option>
+      </select>
+      <label>Fecha y Hora:</label>
+      <input type="datetime-local" id="programarFecha">
+      <button type="submit">Programar Repaso</button>
+    </form>
+    <div id="calendario" style="margin-top:20px;">
+      <p>Calendario de repaso (clic en un evento para iniciar repaso)</p>
+      <ul id="listaEventos"></ul>
+    </div>
+  </section>
 
+  <script>
+    // URL de la Web App de Google Apps Script (reemplazar por la tuya)
+    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzPdBH3ANzuTecPYI2jvksJ6tyRcEVnfPMVYvACXK9JSYmRpa7zfbhE9IMBRCZLLe_m/exec";
+    
+    // Función para enviar datos al backend (Apps Script)
     function enviarDatos(data, callback) {
       fetch(APP_SCRIPT_URL, {
         method: 'POST',
@@ -93,16 +198,83 @@
       .then(callback)
       .catch(err => console.error(err));
     }
-
-    function cargarFiltrosEstudio() {
+    
+    // Procesar el formulario de "Crear preguntas"
+    document.getElementById('grupoPreguntasForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const asignatura = document.getElementById('grupoAsignaturaInput').value.trim();
+      const tema = document.getElementById('grupoTemaInput').value.trim();
+      if(asignatura === "" || tema === ""){
+        alert("Debe escribir o seleccionar asignatura y tema.");
+        return;
+      }
+      let originalText = document.getElementById('grupoTexto').value.trim();
+      if(originalText === ""){
+        alert("Por favor, ingrese el grupo de preguntas.");
+        return;
+      }
+      // Transformar el texto: preguntas separadas por ";" y campos por ","
+      let questionsArray = originalText.split(";").map(q => q.trim()).filter(q => q !== "");
+      let transformedQuestions = questionsArray.map(q => {
+        let fields = q.split(",").map(f => f.trim());
+        return fields.join(" | ");
+      });
+      let finalText = transformedQuestions.join("\n");
+      
+      document.getElementById('loadingMessage').style.display = "block";
+      
+      const data = {
+        action: 'agregarGrupo',
+        asignatura: asignatura,
+        tema: tema,
+        esUsmle: document.getElementById('grupoUsmle').checked ? "sí" : "",
+        texto: finalText
+      };
+      
+      enviarDatos(data, function(res) {
+        document.getElementById('loadingMessage').style.display = "none";
+        document.getElementById('grupoTexto').value = "";
+        const noti = document.getElementById('notificacion');
+        noti.style.display = "block";
+        setTimeout(() => { noti.style.display = "none"; }, 3000);
+        actualizarOpciones(); // Actualiza opciones con los nuevos datos
+      });
+    });
+    
+    // Actualizar las opciones de asignatura y tema consultando el sheet
+    function actualizarOpciones() {
       enviarDatos({ action: 'getPreguntas' }, function(res) {
-        let preguntas = res.preguntas || [];
-        let asignaturas = [...new Set(preguntas.map(q => q.asignatura))];
-        let temas = [...new Set(preguntas.map(q => q.tema))];
-
-        let selects = ['estudioAsignatura', 'repasarAsignatura'];
-        selects.forEach(id => {
-          let select = document.getElementById(id);
+        let allPreguntas = res.preguntas || [];
+        let asignaturasSet = new Set();
+        let temasSet = new Set();
+        allPreguntas.forEach(q => {
+          if(q.asignatura) asignaturasSet.add(q.asignatura);
+          if(q.tema) temasSet.add(q.tema);
+        });
+        let asignaturas = Array.from(asignaturasSet);
+        let temas = Array.from(temasSet);
+        
+        // Actualizar datalists de la sección Crear preguntas
+        const asignaturaList = document.getElementById('asignaturaList');
+        const temaList = document.getElementById('temaList');
+        asignaturaList.innerHTML = "";
+        asignaturas.forEach(a => {
+          let opt = document.createElement("option");
+          opt.value = a;
+          asignaturaList.appendChild(opt);
+        });
+        temaList.innerHTML = "";
+        temas.forEach(t => {
+          let opt = document.createElement("option");
+          opt.value = t;
+          temaList.appendChild(opt);
+        });
+        
+        // Actualizar selects de las secciones Estudiar, Repasar y Programar
+        const selectAsignaturaIDs = ['estudioAsignatura', 'repasarAsignatura', 'programarAsignatura'];
+        const selectTemaIDs = ['estudioTema', 'repasarTema', 'programarTema'];
+        selectAsignaturaIDs.forEach(id => {
+          const select = document.getElementById(id);
           select.innerHTML = '<option value="">-- Seleccionar --</option>';
           asignaturas.forEach(a => {
             let opt = document.createElement("option");
@@ -111,10 +283,8 @@
             select.appendChild(opt);
           });
         });
-
-        selects = ['estudioTema', 'repasarTema'];
-        selects.forEach(id => {
-          let select = document.getElementById(id);
+        selectTemaIDs.forEach(id => {
+          const select = document.getElementById(id);
           select.innerHTML = '<option value="">-- Seleccionar --</option>';
           temas.forEach(t => {
             let opt = document.createElement("option");
@@ -123,22 +293,32 @@
             select.appendChild(opt);
           });
         });
-
-        alert("Filtros actualizados con preguntas disponibles.");
       });
     }
-
+    
+    // Función para cargar los filtros (opciones) en Estudiar y Repasar
+    function cargarFiltrosEstudio() {
+      actualizarOpciones();
+      alert("Filtros actualizados con las preguntas disponibles.");
+    }
+    
+    // Funciones para iniciar la sesión de Estudio y Repaso
     function iniciarEstudio() {
-      let asignatura = document.getElementById('estudioAsignatura').value;
-      let tema = document.getElementById('estudioTema').value;
-      alert(`Iniciando estudio: ${asignatura} - ${tema}`);
+      const asignatura = document.getElementById('estudioAsignatura').value;
+      const tema = document.getElementById('estudioTema').value;
+      alert(`Iniciando estudio para: ${asignatura} - ${tema}`);
+      // Aquí se cargarían y mostrarían las preguntas de estudio
     }
-
+    
     function iniciarRepaso() {
-      let asignatura = document.getElementById('repasarAsignatura').value;
-      let tema = document.getElementById('repasarTema').value;
-      alert(`Iniciando repaso: ${asignatura} - ${tema}`);
+      const asignatura = document.getElementById('repasarAsignatura').value;
+      const tema = document.getElementById('repasarTema').value;
+      alert(`Iniciando repaso para: ${asignatura} - ${tema}`);
+      // Aquí se cargarían y mostrarían las preguntas de repaso
     }
+    
+    // Actualizar opciones al cargar la página
+    window.onload = actualizarOpciones;
   </script>
 </body>
 </html>
