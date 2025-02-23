@@ -4,412 +4,439 @@
   <meta charset="UTF-8">
   <title>Gestor de Preguntas</title>
   <style>
-    /* Estilos básicos y minimalistas */
+    /* Estilo minimalista */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      transition: background 0.3s, color 0.3s;
+      background: #f7f7f7;
+      color: #333;
     }
     header {
-      background: #333;
+      background: #007acc;
       color: #fff;
-      padding: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+    nav {
       display: flex;
       justify-content: center;
+      background: #eaeaea;
     }
-    header button {
-      background: #555;
-      color: #fff;
+    nav button {
+      margin: 0.5rem;
+      padding: 0.5rem 1rem;
       border: none;
-      padding: 10px 20px;
-      margin: 0 5px;
+      background: #ccc;
       cursor: pointer;
+      border-radius: 3px;
     }
-    header button.active {
-      background: #777;
+    nav button.active {
+      background: #007acc;
+      color: #fff;
     }
     .container {
-      padding: 20px;
+      padding: 1rem;
     }
     .hidden {
       display: none;
     }
-    .question-row {
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
       border: 1px solid #ccc;
-      padding: 10px;
-      margin-bottom: 10px;
+      border-radius: 3px;
     }
-    /* Estilos para la interfaz de estudio a pantalla completa */
-    .study-interface {
+    label {
+      font-weight: bold;
+    }
+    button {
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 3px;
+      background: #007acc;
+      color: #fff;
+    }
+    /* Estilos para la interfaz de estudio (full screen) */
+    #studyOverlay {
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
-      background: #fff;
-      display: flex;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bgStudy, #fff);
+      color: var(--textStudy, #000);
+      z-index: 1000;
+      display: none;
       flex-direction: column;
+      padding: 1rem;
     }
-    .study-header {
-      background: #333;
-      color: #fff;
-      padding: 10px;
+    #studyHeader {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .study-content {
+    #studyContent {
       flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 20px;
       text-align: center;
+      margin-top: 1rem;
     }
-    .options {
-      margin-top: 10px;
+    .optionBtn {
+      display: block;
+      margin: 0.5rem auto;
+      padding: 0.5rem;
+      width: 80%;
+      border: 1px solid #007acc;
+      background: #f0f0f0;
+      border-radius: 3px;
     }
-    .option {
-      margin: 5px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      cursor: pointer;
-      display: inline-block;
-    }
-    .right-panel {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
+    .optionBtn.correct { background: #c8e6c9; border-color: #2e7d32; }
+    .optionBtn.incorrect { background: #ffcdd2; border-color: #c62828; }
+    #studyFooter {
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
     }
-    .right-panel button {
-      margin: 5px;
-      padding: 10px;
+    .difficultyBtn {
+      margin: 0 0.5rem;
+      padding: 0.3rem 0.7rem;
+      border: 1px solid #777;
+      border-radius: 3px;
+      background: #ddd;
     }
-    .dark-mode {
-      background: #222;
-      color: #eee;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 10px;
-    }
-    table, th, td {
-      border: 1px solid #aaa;
-    }
-    th, td {
-      padding: 5px;
-      text-align: center;
+    /* Botón para modo día/noche */
+    #toggleMode {
+      margin-right: 1rem;
     }
   </style>
 </head>
 <body>
   <header>
-    <button id="agregarTab" class="active">Agregar Preguntas</button>
-    <button id="estudiarTab">Estudiar Preguntas</button>
+    <h1>Gestor de Preguntas</h1>
   </header>
+  <nav>
+    <button id="btnAgregar" class="active">Agregar Preguntas</button>
+    <button id="btnEstudiar">Estudiar Preguntas</button>
+  </nav>
+  <div class="container">
+    <!-- Sección Agregar Preguntas -->
+    <div id="agregarSection">
+      <h2>Agregar Preguntas</h2>
+      <form id="formAgregar">
+        <label for="asignatura">Asignatura:</label>
+        <input type="text" id="asignatura" name="asignatura" required placeholder="Ej. Anatomía">
 
-  <!-- Sección Agregar Preguntas -->
-  <div id="agregarSection" class="container">
-    <h2>Agregar Preguntas</h2>
-    <form id="addQuestionForm">
-      <label>Asignatura: <input type="text" name="asignatura" required></label><br><br>
-      <label>Tema: <input type="text" name="tema" required></label><br><br>
-      <label><input type="checkbox" name="usmle"> USMLE?</label><br><br>
-      <div id="questionsContainer">
-        <!-- Se agregarán filas dinámicas para cada pregunta -->
+        <label for="tema">Tema:</label>
+        <input type="text" id="tema" name="tema" required placeholder="Ej. Cabeza y cuello">
+
+        <label>
+          <input type="checkbox" id="usmle" name="usmle">
+          Grupo USMLE
+        </label>
+
+        <label for="groupText">Grupo de Preguntas (separadas por “;”, cada entrada: “pregunta”, “respuesta/opciones”, “explicación”, “T” o “F”):</label>
+        <textarea id="groupText" name="groupText" rows="6" placeholder='Ej: "¿Qué es ...?", "Opción1, Opción2, Opción3, Opción4", "Explicación", "T"; "Pregunta flash", "Respuesta", "Explicación", "F"'></textarea>
+        <button type="submit">Agregar Preguntas</button>
+      </form>
+      <hr>
+      <h3>Preguntas Disponibles</h3>
+      <div id="listaPreguntas">
+        <!-- Se llenará con AJAX -->
+        Cargando preguntas...
       </div>
-      <button type="button" id="addRowBtn">Agregar fila de pregunta</button><br><br>
-      <button type="submit">Enviar Preguntas</button>
-    </form>
-    <hr>
-    <h3>Preguntas Disponibles</h3>
-    <button type="button" id="refreshQuestions">Cargar Preguntas</button>
-    <div id="questionsList">
-      <!-- Se mostrará una tabla con las preguntas obtenidas del sheet -->
+    </div>
+
+    <!-- Sección Estudiar Preguntas -->
+    <div id="estudiarSection" class="hidden">
+      <h2>Estudiar Preguntas</h2>
+      <form id="formEstudiar">
+        <label for="asignaturaEstudio">Asignatura:</label>
+        <input type="text" id="asignaturaEstudio" name="asignatura" placeholder="Ej. Anatomía" required>
+
+        <label for="temaEstudio">Tema:</label>
+        <input type="text" id="temaEstudio" name="tema" placeholder="Ej. Cabeza y cuello" required>
+
+        <button type="submit">Comenzar Estudio</button>
+      </form>
     </div>
   </div>
 
-  <!-- Sección Estudiar Preguntas -->
-  <div id="estudiarSection" class="container hidden">
-    <h2>Estudiar Preguntas</h2>
-    <label>Asignatura:
-      <input type="text" id="studyAsignatura">
-    </label>
-    <label>Tema:
-      <input type="text" id="studyTema">
-    </label>
-    <button id="loadStudyBtn">Cargar Preguntas</button>
-    <div id="studyInterface" class="study-interface hidden">
-      <div class="study-header">
-        <span id="questionProgress">Pregunta 0/0</span>
-        <div>
-          <button id="toggleDarkBtn">Modo Día/Noche</button>
-          <button id="exitStudyBtn">Salir</button>
-        </div>
+  <!-- Interfaz de estudio (overlay full screen) -->
+  <div id="studyOverlay">
+    <div id="studyHeader">
+      <div>
+        <button id="exitStudy">Salir</button>
       </div>
-      <div class="study-content">
-        <div id="questionCard">
-          <!-- Se mostrará la pregunta -->
-        </div>
-        <div id="optionsContainer" class="options"></div>
-        <button id="flipCardBtn" class="hidden">Mostrar Respuesta</button>
+      <div>
+        <button id="toggleMode">Modo Día/Noche</button>
       </div>
-      <div class="right-panel">
-        <button id="easyBtn">Fácil</button>
-        <button id="mediumBtn">Medio</button>
-        <button id="hardBtn">Difícil</button>
-        <button id="prevBtn">Anterior</button>
-        <button id="nextBtn">Siguiente</button>
+    </div>
+    <div id="studyContent">
+      <!-- Aquí se mostrará la pregunta o flashcard -->
+      <div id="preguntaTexto" style="font-size: 1.5rem; margin-bottom:1rem;"></div>
+      <div id="opcionesContainer"></div>
+      <button id="btnFlip" class="hidden">Mostrar Respuesta</button>
+      <div id="respuestaTexto" class="hidden" style="margin-top:1rem;"></div>
+    </div>
+    <div id="studyFooter">
+      <div>
+        <span id="progreso">Pregunta 0 de 0</span>
+      </div>
+      <div>
+        <button class="difficultyBtn" data-dif="Fácil">Fácil</button>
+        <button class="difficultyBtn" data-dif="Medio">Medio</button>
+        <button class="difficultyBtn" data-dif="Difícil">Difícil</button>
+      </div>
+      <div>
+        <button id="prevQuestion">Anterior</button>
+        <button id="nextQuestion">Siguiente</button>
       </div>
     </div>
   </div>
 
   <script>
-    // URL del Apps Script (reemplazar 'YOUR_SCRIPT_ID' por el ID correspondiente)
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbyCTOSMbrmXEKY2edyQNMZTeAE9DPOy80VH55IwBMphfu-Zn9j3ZkTYFcI-DmanI0Ry/exec';
+    // Actualiza esta variable con la URL de tu web app de Google Apps Script
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykzsEHZZcxbFYFXOPMOpS9NL02B3KdfUjXD2GKMlryrEe2vxjFIsZGY_h0ThgBxqGy/exec";
 
-    /* ---------------------------
-       Sección: Agregar Preguntas
-    -----------------------------*/
-    // Función para crear una fila de pregunta en el formulario
-    function createQuestionRow() {
-      const row = document.createElement('div');
-      row.className = 'question-row';
-      row.innerHTML = `
-        <label>Pregunta: <input type="text" name="pregunta" required></label><br>
-        <label>Respuesta (para test: separe opciones con "|"): <input type="text" name="respuesta" required></label><br>
-        <label>Explicación: <input type="text" name="explicacion"></label><br>
-        <label>Tipo:
-          <select name="tipo">
-            <option value="T">Test</option>
-            <option value="F">Flashcard</option>
-          </select>
-        </label>
-        <button type="button" class="removeRowBtn">Eliminar fila</button>
-      `;
-      // Eliminar fila al hacer clic
-      row.querySelector('.removeRowBtn').addEventListener('click', () => {
-        row.remove();
+    // Variables globales para la sección de estudio
+    let preguntasEstudio = [];
+    let indiceActual = 0;
+    let modoOscuro = false;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Manejo de pestañas
+      document.getElementById("btnAgregar").addEventListener("click", () => {
+        document.getElementById("agregarSection").classList.remove("hidden");
+        document.getElementById("estudiarSection").classList.add("hidden");
+        document.getElementById("btnAgregar").classList.add("active");
+        document.getElementById("btnEstudiar").classList.remove("active");
       });
-      return row;
-    }
-    // Agrega una fila inicial al cargar la página
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('questionsContainer').appendChild(createQuestionRow());
-    });
-    // Botón para agregar una nueva fila de pregunta
-    document.getElementById('addRowBtn').addEventListener('click', () => {
-      document.getElementById('questionsContainer').appendChild(createQuestionRow());
-    });
-    // Maneja el envío del formulario para agregar preguntas
-    document.getElementById('addQuestionForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const formData = new FormData(this);
-      const asignatura = formData.get('asignatura');
-      const tema = formData.get('tema');
-      const usmle = formData.get('usmle') ? 'Sí' : '';
-      // Recolecta los datos de cada fila
-      const rows = document.querySelectorAll('#questionsContainer .question-row');
-      let questions = [];
-      rows.forEach(row => {
-        const pregunta = row.querySelector('input[name="pregunta"]').value;
-        const respuesta = row.querySelector('input[name="respuesta"]').value;
-        const explicacion = row.querySelector('input[name="explicacion"]').value;
-        const tipo = row.querySelector('select[name="tipo"]').value;
-        questions.push({pregunta, respuesta, explicacion, tipo});
+      document.getElementById("btnEstudiar").addEventListener("click", () => {
+        document.getElementById("agregarSection").classList.add("hidden");
+        document.getElementById("estudiarSection").classList.remove("hidden");
+        document.getElementById("btnAgregar").classList.remove("active");
+        document.getElementById("btnEstudiar").classList.add("active");
       });
-      const data = {
-        action: 'add',
-        asignatura,
-        tema,
-        usmle,
-        questions
-      };
-      fetch(scriptURL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-      }).then(() => {
-        alert('Preguntas enviadas correctamente.');
-        // Aquí puedes limpiar el formulario o recargar la lista de preguntas
-      }).catch(error => {
-        alert('Error al enviar las preguntas.');
-        console.error('Error:', error);
+
+      // Cargar preguntas para visualizar en Agregar (sin filtro)
+      cargarPreguntasDisponibles();
+
+      // Manejo del formulario de Agregar Preguntas
+      document.getElementById("formAgregar").addEventListener("submit", (e) => {
+        e.preventDefault();
+        agregarPreguntas();
+      });
+
+      // Manejo del formulario de Estudiar Preguntas
+      document.getElementById("formEstudiar").addEventListener("submit", (e) => {
+        e.preventDefault();
+        iniciarEstudio();
+      });
+
+      // Botones de navegación en la interfaz de estudio
+      document.getElementById("nextQuestion").addEventListener("click", () => {
+        if (indiceActual < preguntasEstudio.length - 1) {
+          indiceActual++;
+          mostrarPregunta();
+        }
+      });
+      document.getElementById("prevQuestion").addEventListener("click", () => {
+        if (indiceActual > 0) {
+          indiceActual--;
+          mostrarPregunta();
+        }
+      });
+      document.getElementById("exitStudy").addEventListener("click", () => {
+        salirEstudio();
+      });
+      document.getElementById("toggleMode").addEventListener("click", toggleDiaNoche);
+      document.getElementById("btnFlip").addEventListener("click", () => {
+        document.getElementById("respuestaTexto").classList.toggle("hidden");
+      });
+
+      // Botones de clasificación de dificultad (aquí se podrían guardar en el Sheet, según se amplíe la función)
+      document.querySelectorAll(".difficultyBtn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          alert("Se ha clasificado como: " + btn.dataset.dif);
+          // Aquí se podría hacer un update en el Sheet para guardar la dificultad
+        });
       });
     });
-    // Función para cargar preguntas existentes desde el sheet
-    function loadQuestions() {
-      fetch(scriptURL + '?action=get')
-        .then(response => response.json())
+
+    // Función para cargar todas las preguntas disponibles y mostrarlas en la sección Agregar
+    function cargarPreguntasDisponibles() {
+      fetch(SCRIPT_URL + "?action=getQuestions")
+        .then(res => res.json())
         .then(data => {
-          const list = document.getElementById('questionsList');
-          list.innerHTML = '';
-          if(data && data.length) {
-            let table = '<table><tr><th>Asignatura</th><th>Tema</th><th>ID</th><th>Pregunta</th><th>Respuesta</th><th>Explicación</th><th>Tipo</th><th>USMLE</th><th>Dificultad</th></tr>';
-            data.forEach(item => {
-              table += `<tr>
-                <td>${item.Asignatura}</td>
-                <td>${item.Tema}</td>
-                <td>${item["id#"]}</td>
-                <td>${item.Pregunta}</td>
-                <td>${item.Respuesta}</td>
-                <td>${item.Explicación}</td>
-                <td>${item["Test o Flashcard"]}</td>
-                <td>${item["USMLE?"]}</td>
-                <td>${item.Dificultad}</td>
-              </tr>`;
-            });
-            table += '</table>';
-            list.innerHTML = table;
-          } else {
-            list.innerHTML = '<p>No hay preguntas disponibles.</p>';
-          }
+          let html = "<table border='1' cellpadding='4'><tr><th>Asignatura</th><th>Tema</th><th>ID</th><th>Pregunta</th><th>Tipo</th></tr>";
+          data.forEach(q => {
+            html += `<tr>
+                      <td>${q.asignatura}</td>
+                      <td>${q.tema}</td>
+                      <td>${q.id}</td>
+                      <td>${q.pregunta}</td>
+                      <td>${q.tipo}</td>
+                    </tr>`;
+          });
+          html += "</table>";
+          document.getElementById("listaPreguntas").innerHTML = html;
         })
-        .catch(error => {
-          console.error('Error al cargar las preguntas:', error);
+        .catch(err => {
+          document.getElementById("listaPreguntas").innerHTML = "Error al cargar preguntas.";
+          console.error(err);
         });
     }
-    document.getElementById('refreshQuestions').addEventListener('click', loadQuestions);
 
-    /* ---------------------------
-       Navegación entre secciones
-    -----------------------------*/
-    document.getElementById('agregarTab').addEventListener('click', () => {
-      document.getElementById('agregarSection').classList.remove('hidden');
-      document.getElementById('estudiarSection').classList.add('hidden');
-      document.getElementById('agregarTab').classList.add('active');
-      document.getElementById('estudiarTab').classList.remove('active');
-    });
-    document.getElementById('estudiarTab').addEventListener('click', () => {
-      document.getElementById('agregarSection').classList.add('hidden');
-      document.getElementById('estudiarSection').classList.remove('hidden');
-      document.getElementById('agregarTab').classList.remove('active');
-      document.getElementById('estudiarTab').classList.add('active');
-    });
+    // Función para enviar las nuevas preguntas al Apps Script
+    function agregarPreguntas() {
+      const asignatura = document.getElementById("asignatura").value.trim();
+      const tema = document.getElementById("tema").value.trim();
+      const usmle = document.getElementById("usmle").checked;
+      const groupText = document.getElementById("groupText").value.trim();
 
-    /* ---------------------------
-       Sección: Estudiar Preguntas
-    -----------------------------*/
-    let studyQuestions = [];
-    let currentIndex = 0;
-    // Cargar preguntas para estudiar según filtros
-    document.getElementById('loadStudyBtn').addEventListener('click', () => {
-      const asignatura = document.getElementById('studyAsignatura').value;
-      const tema = document.getElementById('studyTema').value;
-      fetch(scriptURL + '?action=get')
-        .then(response => response.json())
+      if (!asignatura || !tema || !groupText) {
+        alert("Complete todos los campos");
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.append("asignatura", asignatura);
+      params.append("tema", tema);
+      params.append("usmle", usmle);
+      params.append("groupText", groupText);
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        body: params
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.status === "success"){
+          alert("Preguntas agregadas correctamente.");
+          // Recargar la lista de preguntas
+          cargarPreguntasDisponibles();
+          document.getElementById("formAgregar").reset();
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error al agregar preguntas.");
+      });
+    }
+
+    // Función para iniciar la sesión de estudio
+    function iniciarEstudio() {
+      const asignatura = document.getElementById("asignaturaEstudio").value.trim();
+      const tema = document.getElementById("temaEstudio").value.trim();
+      if(!asignatura || !tema){
+        alert("Complete asignatura y tema");
+        return;
+      }
+      fetch(`${SCRIPT_URL}?action=getQuestions&asignatura=${encodeURIComponent(asignatura)}&tema=${encodeURIComponent(tema)}`)
+        .then(res => res.json())
         .then(data => {
-          studyQuestions = data.filter(q => {
-            return (!asignatura || q.Asignatura.toLowerCase().includes(asignatura.toLowerCase())) &&
-                   (!tema || q.Tema.toLowerCase().includes(tema.toLowerCase()));
-          });
-          if(studyQuestions.length === 0) {
-            alert('No se encontraron preguntas para los filtros seleccionados.');
+          if(data.length === 0){
+            alert("No se encontraron preguntas para estos criterios.");
             return;
           }
-          currentIndex = 0;
-          showStudyQuestion();
-          document.getElementById('studyInterface').classList.remove('hidden');
+          preguntasEstudio = data;
+          indiceActual = 0;
+          mostrarPregunta();
+          activarFullScreen();
+          document.getElementById("studyOverlay").style.display = "flex";
         })
-        .catch(error => {
-          console.error('Error al cargar preguntas para estudiar:', error);
+        .catch(err => {
+          console.error(err);
+          alert("Error al cargar las preguntas.");
         });
-    });
+    }
+
     // Muestra la pregunta actual en la interfaz de estudio
-    function showStudyQuestion() {
-      const questionObj = studyQuestions[currentIndex];
-      document.getElementById('questionProgress').textContent = `Pregunta ${currentIndex+1}/${studyQuestions.length}`;
-      const card = document.getElementById('questionCard');
-      const optionsContainer = document.getElementById('optionsContainer');
-      const flipBtn = document.getElementById('flipCardBtn');
-      card.innerHTML = '';
-      optionsContainer.innerHTML = '';
-      flipBtn.classList.add('hidden');
-      if(questionObj["Test o Flashcard"] === 'T') {
-        // Pregunta tipo test: separamos y barajamos las opciones.
-        let options = questionObj.Respuesta.split("|");
-        // La primera opción es la correcta
-        const correctAnswer = options[0].trim();
-        options = options.map(o => o.trim()).sort(() => Math.random() - 0.5);
-        card.innerHTML = '<h3>' + questionObj.Pregunta + '</h3>';
-        options.forEach(option => {
-          const btn = document.createElement('button');
-          btn.className = 'option';
-          btn.textContent = option;
-          btn.addEventListener('click', () => {
-            if(option === correctAnswer) {
-              btn.style.background = 'lightgreen';
-              alert('¡Correcto!');
+    function mostrarPregunta() {
+      const preguntaActual = preguntasEstudio[indiceActual];
+      document.getElementById("respuestaTexto").classList.add("hidden");
+      document.getElementById("btnFlip").classList.add("hidden");
+      document.getElementById("respuestaTexto").innerHTML = "";
+      document.getElementById("opcionesContainer").innerHTML = "";
+
+      document.getElementById("progreso").innerText = `Pregunta ${indiceActual+1} de ${preguntasEstudio.length}`;
+      document.getElementById("preguntaTexto").innerText = preguntaActual.pregunta;
+
+      if(preguntaActual.tipo === "T") {
+        // Pregunta de test: la cadena de opciones se espera en el campo "respuesta"
+        let opciones = preguntaActual.respuesta.split(/[\[\]]/).filter(opt => opt.trim() !== "");
+        // La primera opción es la correcta, se barajea para mostrar en orden aleatorio
+        opciones = shuffle(opciones);
+        opciones.forEach(opt => {
+          const btn = document.createElement("button");
+          btn.className = "optionBtn";
+          btn.innerText = opt.trim();
+          btn.addEventListener("click", () => {
+            if(opt.trim() === preguntaActual.respuesta.split(/[\[\]]/)[1].trim()){
+              btn.classList.add("correct");
             } else {
-              btn.style.background = 'lightcoral';
-              alert('Incorrecto. La respuesta correcta es: ' + correctAnswer);
+              btn.classList.add("incorrect");
             }
           });
-          optionsContainer.appendChild(btn);
+          document.getElementById("opcionesContainer").appendChild(btn);
         });
       } else {
-        // Pregunta tipo flashcard: se muestra la pregunta y se ofrece voltear la tarjeta.
-        card.innerHTML = '<h3>' + questionObj.Pregunta + '</h3>';
-        flipBtn.classList.remove('hidden');
-        flipBtn.onclick = () => {
-          card.innerHTML = '<h3>' + questionObj.Pregunta + '</h3>' +
-                           '<p><strong>Respuesta:</strong> ' + questionObj.Respuesta + '</p>' +
-                           '<p><strong>Explicación:</strong> ' + questionObj.Explicación + '</p>';
-          flipBtn.classList.add('hidden');
-        };
+        // Pregunta flashcard: mostrar botón para revelar respuesta y explicación
+        document.getElementById("btnFlip").classList.remove("hidden");
+        document.getElementById("respuestaTexto").innerHTML = `<strong>Respuesta:</strong> ${preguntaActual.respuesta}<br>
+                                                                <strong>Explicación:</strong> ${preguntaActual.explicacion}`;
       }
     }
-    // Navegación entre preguntas
-    document.getElementById('nextBtn').addEventListener('click', () => {
-      if(currentIndex < studyQuestions.length - 1) {
-        currentIndex++;
-        showStudyQuestion();
+
+    // Función para salir de la sesión de estudio
+    function salirEstudio() {
+      document.getElementById("studyOverlay").style.display = "none";
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
       }
-    });
-    document.getElementById('prevBtn').addEventListener('click', () => {
-      if(currentIndex > 0) {
+    }
+
+    // Función para alternar día/noche (modificando variables CSS)
+    function toggleDiaNoche() {
+      modoOscuro = !modoOscuro;
+      if(modoOscuro){
+        document.documentElement.style.setProperty('--bgStudy', '#222');
+        document.documentElement.style.setProperty('--textStudy', '#eee');
+      } else {
+        document.documentElement.style.setProperty('--bgStudy', '#fff');
+        document.documentElement.style.setProperty('--textStudy', '#000');
+      }
+    }
+
+    // Función para activar full screen
+    function activarFullScreen() {
+      let elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) { /* Safari */
+        elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) { /* IE11 */
+        elem.msRequestFullscreen();
+      }
+    }
+
+    // Función auxiliar para barajar un array
+    function shuffle(array) {
+      let currentIndex = array.length, randomIndex;
+      while (currentIndex !== 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
         currentIndex--;
-        showStudyQuestion();
+        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
       }
-    });
-    // Alternar modo día/noche
-    document.getElementById('toggleDarkBtn').addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-    });
-    // Salir de la interfaz de estudio
-    document.getElementById('exitStudyBtn').addEventListener('click', () => {
-      document.getElementById('studyInterface').classList.add('hidden');
-    });
-    // Actualización de dificultad (se simula el envío al Apps Script)
-    function updateDifficulty(difficulty) {
-      const questionObj = studyQuestions[currentIndex];
-      questionObj.Dificultad = difficulty;
-      const data = {
-        action: 'updateDifficulty',
-        id: questionObj["id#"],
-        dificultad: difficulty
-      };
-      fetch(scriptURL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-      }).then(() => {
-        alert('Dificultad actualizada a ' + difficulty);
-      }).catch(error => {
-        console.error('Error al actualizar dificultad:', error);
-      });
+      return array;
     }
-    document.getElementById('easyBtn').addEventListener('click', () => updateDifficulty('Fácil'));
-    document.getElementById('mediumBtn').addEventListener('click', () => updateDifficulty('Medio'));
-    document.getElementById('hardBtn').addEventListener('click', () => updateDifficulty('Difícil'));
   </script>
 </body>
 </html>
