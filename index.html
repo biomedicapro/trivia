@@ -52,9 +52,8 @@
       max-width: 800px;
       margin: 0 auto;
     }
-    form input[type="text"],
-    form textarea,
     form select,
+    form textarea,
     form input[type="datetime-local"] {
       width: 100%;
       padding: 10px;
@@ -75,6 +74,18 @@
     }
     form button:hover {
       background-color: #555;
+    }
+    /* Notificaciones y mensajes de cargue */
+    #loadingMessage, #notificacion {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    #loadingMessage {
+      color: #555;
+    }
+    #notificacion {
+      color: green;
     }
     /* Panel vertical para la interfaz de estudio/repaso */
     .fullscreen {
@@ -154,26 +165,32 @@
     </nav>
   </header>
 
-  <!-- Sección Crear preguntas (solo grupo) -->
+  <!-- Sección Crear preguntas (sólo grupo) -->
   <section id="crear" class="section active">
     <h2>Pegar Grupo de Preguntas</h2>
     <form id="grupoPreguntasForm">
-      <label>Asignatura:</label>
-      <input type="text" id="grupoAsignatura" placeholder="Asignatura del grupo">
-      <label>Tema:</label>
-      <input type="text" id="grupoTema" placeholder="Tema del grupo">
+      <label>Asignatura (obligatorio):</label>
+      <select id="grupoAsignatura">
+        <option value="">-- Seleccionar Asignatura --</option>
+      </select>
+      <label>Tema (obligatorio):</label>
+      <select id="grupoTema">
+        <option value="">-- Seleccionar Tema --</option>
+      </select>
       <label>Es USMLE?</label>
       <input type="checkbox" id="grupoUsmle">
       <label>
-        Pega las preguntas (puedes mezclar preguntas flashcards y tipo test en una sola pega).<br>
-        Formato para flashcards: pregunta | respuesta | explicación<br>
-        Formato para test: pregunta | [opción correcta], [opción 2], [opción 3], [opción 4]... | explicación<br>
-        (Cada pregunta en una línea, separando los campos con “|”)
+        Pega las preguntas. Usa el siguiente formato:<br>
+        • Para cada pregunta, separa las casillas (Pregunta, Respuesta, Explicación) con comas.<br>
+        • Separa cada pregunta con punto y coma (“;”).<br>
+        Ejemplo: <br>
+        ¿Función de la hemoglobina?, Transportar oxígeno, La hemoglobina transporta oxígeno; 
+        ¿Qué estructura regula la homeostasis?, Hipotálamo, El hipotálamo regula el equilibrio.
       </label>
-      <textarea id="grupoTexto" rows="6" placeholder="Ejemplo:
-¿Cuál es la función principal de la hemoglobina? | Transportar oxígeno en la sangre | La hemoglobina transporta oxígeno
-¿Qué estructura regula la homeostasis? | Hipotálamo, Médula espinal, Corteza cerebral, Hipocampo | El hipotálamo regula..."></textarea>
+      <textarea id="grupoTexto" rows="6" placeholder="Ingresa aquí el grupo de preguntas"></textarea>
       <button type="submit">Agregar Grupo de Preguntas</button>
+      <div id="loadingMessage" style="display:none;">Cargando...</div>
+      <div id="notificacion" style="display:none;">¡Grupo de preguntas agregado!</div>
     </form>
   </section>
 
@@ -316,16 +333,50 @@
     // Agregar un grupo de preguntas (flashcards o test) de acuerdo al formato ingresado
     document.getElementById('grupoPreguntasForm').addEventListener('submit', function(e) {
       e.preventDefault();
+      
+      // Validar que se haya seleccionado asignatura y tema
+      const asignatura = document.getElementById('grupoAsignatura').value;
+      const tema = document.getElementById('grupoTema').value;
+      if(asignatura === "" || tema === ""){
+        alert("Debe seleccionar asignatura y tema.");
+        return;
+      }
+      
+      // Obtener el texto original pegado
+      let originalText = document.getElementById('grupoTexto').value.trim();
+      if(originalText === ""){
+        alert("Por favor, ingrese el grupo de preguntas.");
+        return;
+      }
+      
+      // Transformar el texto:
+      // • Se asume que las preguntas están separadas por ";"
+      // • Cada pregunta tiene campos separados por ","
+      let questionsArray = originalText.split(";").map(q => q.trim()).filter(q => q !== "");
+      let transformedQuestions = questionsArray.map(q => {
+        let fields = q.split(",").map(f => f.trim());
+        return fields.join(" | ");
+      });
+      let finalText = transformedQuestions.join("\n");
+      
+      // Mostrar mensaje de cargando
+      document.getElementById('loadingMessage').style.display = "block";
+      
       const data = {
         action: 'agregarGrupo',
-        asignatura: document.getElementById('grupoAsignatura').value,
-        tema: document.getElementById('grupoTema').value,
+        asignatura: asignatura,
+        tema: tema,
         esUsmle: document.getElementById('grupoUsmle').checked ? "sí" : "",
-        texto: document.getElementById('grupoTexto').value
+        texto: finalText
       };
       enviarDatos(data, (res) => {
-        alert("Grupo de preguntas agregado");
-        this.reset();
+        document.getElementById('loadingMessage').style.display = "none";
+        // Limpiar el textarea para permitir ingresar más preguntas
+        document.getElementById('grupoTexto').value = "";
+        // Mostrar notificación de éxito
+        let noti = document.getElementById('notificacion');
+        noti.style.display = "block";
+        setTimeout(() => { noti.style.display = "none"; }, 3000);
       });
     });
 
@@ -476,14 +527,19 @@
       // Aquí se cargaría la sesión de repaso correspondiente
     }
 
-    // Función para cargar opciones de asignatura y tema en los selects (stub)
+    // Función para cargar opciones de asignatura y tema en los selects
     function cargarOpciones() {
-      // Se podrían obtener del backend los datos reales; aquí se simula
+      // Simulamos opciones existentes
       const asignaturas = ["Biología", "Química", "Física"];
       const temas = ["Anatomía", "Bioquímica", "Mecánica"];
-      ['estudioAsignatura','repasarAsignatura','programarAsignatura'].forEach(id => {
+      
+      // IDs de selects a poblar
+      const selectAsignaturaIDs = ['estudioAsignatura','repasarAsignatura','programarAsignatura','grupoAsignatura'];
+      const selectTemaIDs = ['estudioTema','repasarTema','programarTema','grupoTema'];
+
+      selectAsignaturaIDs.forEach(id => {
         const select = document.getElementById(id);
-        select.innerHTML = "";
+        select.innerHTML = '<option value="">-- Seleccionar Asignatura --</option>';
         asignaturas.forEach(a => {
           const opt = document.createElement("option");
           opt.value = a;
@@ -491,9 +547,9 @@
           select.appendChild(opt);
         });
       });
-      ['estudioTema','repasarTema','programarTema'].forEach(id => {
+      selectTemaIDs.forEach(id => {
         const select = document.getElementById(id);
-        select.innerHTML = "";
+        select.innerHTML = '<option value="">-- Seleccionar Tema --</option>';
         temas.forEach(t => {
           const opt = document.createElement("option");
           opt.value = t;
