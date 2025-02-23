@@ -154,38 +154,9 @@
     </nav>
   </header>
 
-  <!-- Sección Crear preguntas -->
+  <!-- Sección Crear preguntas (solo grupo) -->
   <section id="crear" class="section active">
-    <h2>Crear Preguntas</h2>
-    <form id="crearForm">
-      <label>Asignatura:</label>
-      <input type="text" id="asignatura" placeholder="Ej: Biología">
-      
-      <label>Tema:</label>
-      <input type="text" id="tema" placeholder="Ej: Anatomía">
-
-      <label>Es USMLE? (Marcar para sí):</label>
-      <input type="checkbox" id="usmle">
-
-      <label>Tipo de Pregunta:</label>
-      <select id="tipoPregunta">
-        <option value="flashcard">Flashcard</option>
-        <option value="test">Tipo Test</option>
-      </select>
-
-      <label>Pregunta:</label>
-      <textarea id="pregunta" rows="3" placeholder="Enunciado de la pregunta (usa ** para negrita)"></textarea>
-
-      <label>Respuesta:</label>
-      <textarea id="respuesta" rows="2" placeholder="Respuesta o lista de opciones (separadas por comas)"></textarea>
-
-      <label>Explicación:</label>
-      <textarea id="explicacion" rows="3" placeholder="Explicación (usa ** para negrita)"></textarea>
-
-      <button type="submit">Guardar Pregunta</button>
-    </form>
-    <hr>
-    <h3>Pegar grupo de preguntas</h3>
+    <h2>Pegar Grupo de Preguntas</h2>
     <form id="grupoPreguntasForm">
       <label>Asignatura:</label>
       <input type="text" id="grupoAsignatura" placeholder="Asignatura del grupo">
@@ -193,14 +164,15 @@
       <input type="text" id="grupoTema" placeholder="Tema del grupo">
       <label>Es USMLE?</label>
       <input type="checkbox" id="grupoUsmle">
-      <label>Tipo de Pregunta:</label>
-      <select id="grupoTipo">
-        <option value="flashcard">Flashcard</option>
-        <option value="test">Tipo Test</option>
-      </select>
-      <label>Pega las preguntas (formato: cada pregunta en una línea separando los campos con “|”):</label>
-      <textarea id="grupoTexto" rows="6" placeholder="Ejemplo para flashcard: pregunta | respuesta | explicación
-Ejemplo para test: pregunta | opción correcta, opción2, opción3,... | explicación"></textarea>
+      <label>
+        Pega las preguntas (puedes mezclar preguntas flashcards y tipo test en una sola pega).<br>
+        Formato para flashcards: pregunta | respuesta | explicación<br>
+        Formato para test: pregunta | [opción correcta], [opción 2], [opción 3], [opción 4]... | explicación<br>
+        (Cada pregunta en una línea, separando los campos con “|”)
+      </label>
+      <textarea id="grupoTexto" rows="6" placeholder="Ejemplo:
+¿Cuál es la función principal de la hemoglobina? | Transportar oxígeno en la sangre | La hemoglobina transporta oxígeno
+¿Qué estructura regula la homeostasis? | Hipotálamo, Médula espinal, Corteza cerebral, Hipocampo | El hipotálamo regula..."></textarea>
       <button type="submit">Agregar Grupo de Preguntas</button>
     </form>
   </section>
@@ -341,25 +313,6 @@ Ejemplo para test: pregunta | opción correcta, opción2, opción3,... | explica
       .catch(err => console.error(err));
     }
 
-    // Guardar una pregunta individual
-    document.getElementById('crearForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const data = {
-        action: 'crearPregunta',
-        asignatura: document.getElementById('asignatura').value,
-        tema: document.getElementById('tema').value,
-        esUsmle: document.getElementById('usmle').checked ? "sí" : "",
-        tipo: document.getElementById('tipoPregunta').value,
-        pregunta: document.getElementById('pregunta').value,
-        respuesta: document.getElementById('respuesta').value,
-        explicacion: document.getElementById('explicacion').value
-      };
-      enviarDatos(data, (res) => {
-        alert("Pregunta guardada");
-        this.reset();
-      });
-    });
-
     // Agregar un grupo de preguntas (flashcards o test) de acuerdo al formato ingresado
     document.getElementById('grupoPreguntasForm').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -368,7 +321,6 @@ Ejemplo para test: pregunta | opción correcta, opción2, opción3,... | explica
         asignatura: document.getElementById('grupoAsignatura').value,
         tema: document.getElementById('grupoTema').value,
         esUsmle: document.getElementById('grupoUsmle').checked ? "sí" : "",
-        tipo: document.getElementById('grupoTipo').value,
         texto: document.getElementById('grupoTexto').value
       };
       enviarDatos(data, (res) => {
@@ -400,7 +352,7 @@ Ejemplo para test: pregunta | opción correcta, opción2, opción3,... | explica
         return;
       }
       const preguntaObj = preguntas[indicePregunta];
-      // Determinar si es pregunta tipo test (si en “respuesta” existen comas)
+      // Determinar si es pregunta tipo test (si en “respuesta” existen varias opciones separadas por coma)
       modoTest = (preguntaObj.respuesta.indexOf(",") > -1);
       let html = `<h3>${formatearTexto(preguntaObj.pregunta)}</h3>`;
       if(modoTest) {
