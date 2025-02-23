@@ -126,8 +126,35 @@
         <li><strong>Flashcards:</strong> "pregunta", "respuesta", "explicación"; "pregunta", "respuesta", "explicación"; ...</li>
         <li><strong>Tipo Test:</strong> "pregunta", "[opción correcta], [opción 2], [opción 3], …", "explicación"; ...</li>
       </ul>
-      <input type="text" id="asignatura" placeholder="Asignatura">
-      <input type="text" id="tema" placeholder="Tema">
+      <!-- Seleccionar modo: nuevo mazo o agregar a existente -->
+      <div>
+        <label>
+          <input type="radio" name="modoMazo" value="nuevo" checked onchange="toggleMazoMode()"> Crear nuevo mazo
+        </label>
+        <label>
+          <input type="radio" name="modoMazo" value="existente" onchange="toggleMazoMode()"> Agregar a mazo existente
+        </label>
+      </div>
+      <!-- Campos para nuevo mazo -->
+      <div id="nuevoMazo">
+        <input type="text" id="asignaturaNuevo" placeholder="Nueva Asignatura">
+        <input type="text" id="temaNuevo" placeholder="Nuevo Tema">
+      </div>
+      <!-- Campos para mazo existente -->
+      <div id="existenteMazo" style="display:none;">
+        <select id="asignaturaExistente" onchange="cargarTemasExistente()">
+          <option value="">-- Selecciona Asignatura Existente --</option>
+        </select>
+        <select id="temaExistente">
+          <option value="">-- Selecciona Tema Existente --</option>
+        </select>
+      </div>
+      <!-- Casilla para indicar USMLE -->
+      <div>
+        <label>
+          <input type="checkbox" id="esUSMLE"> Grupo de preguntas USMLE
+        </label>
+      </div>
       <textarea id="preguntasInput" rows="6" placeholder="Escribe las preguntas separadas por ';'"></textarea>
       <button onclick="agregarPreguntas()">Agregar Preguntas</button>
       <div id="alertaExito" class="alert">¡Preguntas agregadas exitosamente!</div>
@@ -226,34 +253,17 @@
       document.getElementById(seccion).classList.add('active');
     }
 
-    /* AGREGAR PREGUNTAS */
-    function agregarPreguntas() {
-      const asignatura = document.getElementById('asignatura').value.trim();
-      const tema = document.getElementById('tema').value.trim();
-      const texto = document.getElementById('preguntasInput').value.trim();
-      if (!asignatura || !tema || !texto) {
-        alert("Por favor, completa todos los campos.");
-        return;
+    /* TOGGLE ENTRE NUEVO MAZO Y MAZO EXISTENTE */
+    function toggleMazoMode() {
+      const modo = document.querySelector('input[name="modoMazo"]:checked').value;
+      if (modo === 'nuevo') {
+        document.getElementById('nuevoMazo').style.display = 'block';
+        document.getElementById('existenteMazo').style.display = 'none';
+      } else {
+        document.getElementById('nuevoMazo').style.display = 'none';
+        document.getElementById('existenteMazo').style.display = 'block';
+        cargarAsignaturas('asignaturaExistente');
       }
-      const data = {
-        action: 'agregar',
-        asignatura: asignatura,
-        tema: tema,
-        contenido: texto
-      };
-      fetch('https://script.google.com/macros/s/AKfycbzSULc3_zGOTZvsPz5OXcvA5glttmlyx40Joa6LRCIl1SLMYcglNJq3bJwDOnuTxLOZ/exec', {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      }).then(() => {
-        document.getElementById('preguntasInput').value = '';
-        document.getElementById('alertaExito').style.display = 'block';
-        setTimeout(() => { document.getElementById('alertaExito').style.display = 'none'; }, 2000);
-      }).catch(err => {
-        console.error(err);
-        alert("Error al agregar preguntas.");
-      });
     }
 
     /* CARGA DE DATOS DEL SHEET */
@@ -291,6 +301,18 @@
         select.appendChild(option);
       });
     }
+    function cargarTemasExistente() {
+      const asignatura = document.getElementById('asignaturaExistente').value;
+      const select = document.getElementById('temaExistente');
+      select.innerHTML = '<option value="">-- Selecciona Tema Existente --</option>';
+      let temas = [...new Set(preguntas.filter(p => p.asignatura === asignatura).map(p => p.tema))];
+      temas.forEach(t => {
+        let option = document.createElement('option');
+        option.value = t;
+        option.textContent = t;
+        select.appendChild(option);
+      });
+    }
     function cargarTemasRepaso() {
       const asignatura = document.getElementById('repasarAsignatura').value;
       const select = document.getElementById('repasarTema');
@@ -312,6 +334,45 @@
         cargarAsignaturas('progAsignatura');
       });
     };
+
+    /* AGREGAR PREGUNTAS */
+    function agregarPreguntas() {
+      const modo = document.querySelector('input[name="modoMazo"]:checked').value;
+      let asignatura, tema;
+      if (modo === "nuevo") {
+        asignatura = document.getElementById('asignaturaNuevo').value.trim();
+        tema = document.getElementById('temaNuevo').value.trim();
+      } else {
+        asignatura = document.getElementById('asignaturaExistente').value.trim();
+        tema = document.getElementById('temaExistente').value.trim();
+      }
+      const preguntasTexto = document.getElementById('preguntasInput').value.trim();
+      const esUSMLE = document.getElementById('esUSMLE').checked ? "true" : "false";
+      if (!asignatura || !tema || !preguntasTexto) {
+        alert("Por favor, completa todos los campos.");
+        return;
+      }
+      const data = {
+        action: 'agregar',
+        asignatura: asignatura,
+        tema: tema,
+        esUSMLE: esUSMLE,
+        contenido: preguntasTexto
+      };
+      fetch('YOUR_APPS_SCRIPT_WEB_APP_URL', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(() => {
+        document.getElementById('preguntasInput').value = '';
+        document.getElementById('alertaExito').style.display = 'block';
+        setTimeout(() => { document.getElementById('alertaExito').style.display = 'none'; }, 2000);
+      }).catch(err => {
+        console.error(err);
+        alert("Error al agregar preguntas.");
+      });
+    }
 
     /* INICIAR ESTUDIO */
     function iniciarEstudio() {
