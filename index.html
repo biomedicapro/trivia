@@ -2,438 +2,536 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Gestor de Preguntas</title>
+  <title>Aplicación de Preguntas</title>
   <style>
-    /* Estilo minimalista */
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f7f7f7;
-      color: #333;
-    }
-    header {
-      background: #007acc;
-      color: #fff;
-      padding: 1rem;
-      text-align: center;
-    }
-    nav {
-      display: flex;
-      justify-content: center;
-      background: #eaeaea;
-    }
+    /* Reset y estilos básicos */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; color: #333; }
+    header { background: #333; color: #fff; padding: 10px; text-align: center; }
+    nav { display: flex; justify-content: center; background: #444; }
     nav button {
-      margin: 0.5rem;
-      padding: 0.5rem 1rem;
-      border: none;
-      background: #ccc;
+      background: #444; border: none; color: #fff; padding: 10px 20px;
+      margin: 5px; cursor: pointer; font-size: 16px; transition: background 0.3s;
+    }
+    nav button:hover { background: #555; }
+    .container { padding: 20px; }
+    .section { display: none; }
+    .active { display: block; }
+    /* Formularios */
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; }
+    input[type="text"], textarea, select, input[type="date"], input[type="number"] {
+      width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;
+    }
+    textarea { resize: vertical; }
+    .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-primary { background: #28a745; color: #fff; }
+    .btn-secondary { background: #007bff; color: #fff; }
+    .btn-danger { background: #dc3545; color: #fff; }
+    .btn:hover { opacity: 0.9; }
+    /* Tarjetas para estudio/repaso */
+    .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; transition: opacity 0.5s ease; }
+    .card .question { font-size: 20px; margin-bottom: 10px; }
+    .card .options button {
+      display: block; width: 100%; margin-bottom: 5px; padding: 10px;
+      text-align: left; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9;
       cursor: pointer;
-      border-radius: 3px;
     }
-    nav button.active {
-      background: #007acc;
-      color: #fff;
+    .card .options button.correct { background: #28a745; color: #fff; }
+    .card .options button.incorrect { background: #dc3545; color: #fff; }
+    .card .answer { margin-top: 10px; font-size: 18px; color: #555; }
+    /* Navegación en estudio/repaso */
+    .nav-buttons { display: flex; justify-content: space-between; margin-top: 10px; }
+    .difficulty-panel { margin-top: 10px; text-align: center; }
+    .difficulty-panel span {
+      cursor: pointer; font-size: 24px; margin: 0 10px; transition: transform 0.2s;
     }
-    .container {
-      padding: 1rem;
-    }
-    .hidden {
-      display: none;
-    }
-    input[type="text"], textarea, select {
-      width: 100%;
-      padding: 0.5rem;
-      margin-bottom: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-    }
-    label {
-      font-weight: bold;
-    }
-    button {
-      cursor: pointer;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 3px;
-      background: #007acc;
-      color: #fff;
-    }
-    /* Estilos para la interfaz de estudio (full screen) */
+    .difficulty-panel span:hover { transform: scale(1.2); }
+    /* Estilos para calendario y timer en repaso */
+    .calendar, .timer { margin-top: 15px; }
+    /* Overlay a pantalla completa para Estudio/Repaso */
     #studyOverlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: var(--bgStudy, #fff);
-      color: var(--textStudy, #000);
-      z-index: 1000;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #f4f4f4; z-index: 1000; padding: 20px; overflow: auto;
       display: none;
-      flex-direction: column;
-      padding: 1rem;
     }
-    #studyHeader {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    #studyContent {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      margin-top: 1rem;
-    }
-    .optionBtn {
-      display: block;
-      margin: 0.5rem auto;
-      padding: 0.5rem;
-      width: 80%;
-      border: 1px solid #007acc;
-      background: #f0f0f0;
-      border-radius: 3px;
-    }
-    .optionBtn.correct { background: #c8e6c9; border-color: #2e7d32; }
-    .optionBtn.incorrect { background: #ffcdd2; border-color: #c62828; }
-    #studyFooter {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 1rem;
-    }
-    .difficultyBtn {
-      margin: 0 0.5rem;
-      padding: 0.3rem 0.7rem;
-      border: 1px solid #777;
-      border-radius: 3px;
-      background: #ddd;
-    }
-    /* Botón para modo día/noche */
-    #toggleMode {
-      margin-right: 1rem;
+    #studyOverlay.active { display: block; }
+    /* Responsive */
+    @media (min-width: 768px) {
+      .container { width: 750px; margin: 0 auto; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Gestor de Preguntas</h1>
+    <h1>Aplicación de Preguntas</h1>
   </header>
   <nav>
-    <button id="btnAgregar" class="active">Agregar Preguntas</button>
-    <button id="btnEstudiar">Estudiar Preguntas</button>
+    <button onclick="switchSection('agregar')">Agregar Preguntas</button>
+    <button onclick="switchSection('estudiar')">Estudiar Preguntas</button>
+    <button onclick="switchSection('repaso')">Repaso</button>
   </nav>
+  
   <div class="container">
     <!-- Sección Agregar Preguntas -->
-    <div id="agregarSection">
+    <div id="section-agregar" class="section active">
       <h2>Agregar Preguntas</h2>
-      <form id="formAgregar">
-        <label for="asignatura">Asignatura:</label>
-        <input type="text" id="asignatura" name="asignatura" required placeholder="Ej. Anatomía">
-
-        <label for="tema">Tema:</label>
-        <input type="text" id="tema" name="tema" required placeholder="Ej. Cabeza y cuello">
-
-        <label>
-          <input type="checkbox" id="usmle" name="usmle">
-          Grupo USMLE
-        </label>
-
-        <label for="groupText">Grupo de Preguntas (separadas por “;”, cada entrada: “pregunta”, “respuesta/opciones”, “explicación”, “T” o “F”):</label>
-        <textarea id="groupText" name="groupText" rows="6" placeholder='Ej: "¿Qué es ...?", "Opción1, Opción2, Opción3, Opción4", "Explicación", "T"; "Pregunta flash", "Respuesta", "Explicación", "F"'></textarea>
-        <button type="submit">Agregar Preguntas</button>
-      </form>
-      <hr>
-      <h3>Preguntas Disponibles</h3>
-      <div id="listaPreguntas">
-        <!-- Se llenará con AJAX -->
-        Cargando preguntas...
+      <div class="form-group">
+        <label for="existingSubject">Mazo Existente - Asignatura:</label>
+        <select id="existingSubject"></select>
       </div>
+      <div class="form-group">
+        <label for="existingTheme">Mazo Existente - Tema:</label>
+        <select id="existingTheme"></select>
+      </div>
+      <div class="form-group">
+        <button id="newMazoBtn" class="btn btn-secondary">Nuevo Mazo</button>
+      </div>
+      <div id="newMazoInputs" style="display: none;">
+        <div class="form-group">
+          <label for="newSubject">Nueva Asignatura:</label>
+          <input type="text" id="newSubject" placeholder="Ingrese nueva asignatura">
+        </div>
+        <div class="form-group">
+          <label for="newTheme">Nuevo Tema:</label>
+          <input type="text" id="newTheme" placeholder="Ingrese nuevo tema">
+        </div>
+      </div>
+      <div class="form-group">
+        <input type="checkbox" id="usmleCheckbox">
+        <label for="usmleCheckbox">USMLE</label>
+      </div>
+      <div class="form-group">
+        <label for="questionsText">Grupo de Preguntas (Formato mixto):</label>
+        <textarea id="questionsText" rows="6" placeholder='Ejemplo para Flashcards: "pregunta1", "respuesta1", "explicación1", "F"; "pregunta2", "respuesta2", "explicación2", "F"; Ejemplo para Test: "pregunta3", "[opción correcta] [opción 2] [opción 3] [opción 4]", "explicación3", "T"; ...'></textarea>
+      </div>
+      <div class="form-group">
+        <button id="addQuestionsBtn" class="btn btn-primary">Agregar</button>
+      </div>
+      <div id="agregarMessage"></div>
     </div>
-
+    
     <!-- Sección Estudiar Preguntas -->
-    <div id="estudiarSection" class="hidden">
+    <div id="section-estudiar" class="section">
       <h2>Estudiar Preguntas</h2>
-      <form id="formEstudiar">
-        <label for="asignaturaEstudio">Asignatura:</label>
-        <input type="text" id="asignaturaEstudio" name="asignatura" placeholder="Ej. Anatomía" required>
-
-        <label for="temaEstudio">Tema:</label>
-        <input type="text" id="temaEstudio" name="tema" placeholder="Ej. Cabeza y cuello" required>
-
-        <button type="submit">Comenzar Estudio</button>
-      </form>
+      <div id="estudioSelector">
+        <div class="form-group">
+          <label for="studySubject">Asignatura:</label>
+          <select id="studySubject"></select>
+        </div>
+        <div class="form-group">
+          <label for="studyTheme">Tema:</label>
+          <select id="studyTheme"></select>
+        </div>
+        <div class="form-group">
+          <button id="startStudyBtn" class="btn btn-primary">Iniciar Estudio</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sección Repaso -->
+    <div id="section-repaso" class="section">
+      <h2>Repaso</h2>
+      <div class="form-group">
+        <label for="repasoSubject">Asignatura (selección múltiple):</label>
+        <select id="repasoSubject" multiple size="4"></select>
+      </div>
+      <div class="form-group">
+        <label for="repasoTheme">Tema (selección múltiple):</label>
+        <select id="repasoTheme" multiple size="4"></select>
+      </div>
+      <div class="form-group">
+        <label for="repasoDifficulty">Dificultad:</label>
+        <select id="repasoDifficulty">
+          <option value="">--Todas--</option>
+          <option value="fácil">Fácil</option>
+          <option value="medio">Medio</option>
+          <option value="difícil">Difícil</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <input type="checkbox" id="repasoUsmle">
+        <label for="repasoUsmle">USMLE</label>
+      </div>
+      <div class="form-group">
+        <label for="repasoCalendar">Selecciona Fecha (para programar sesión):</label>
+        <input type="date" id="repasoCalendar">
+      </div>
+      <div class="form-group">
+        <label for="repasoTimer">Timer (minutos):</label>
+        <input type="number" id="repasoTimer" min="0" placeholder="0 para desactivar">
+      </div>
+      <div class="form-group">
+        <button id="startRepasoBtn" class="btn btn-primary">Iniciar Repaso</button>
+      </div>
+      <div id="repasoMessage"></div>
     </div>
   </div>
-
-  <!-- Interfaz de estudio (overlay full screen) -->
+  
+  <!-- Overlay de pantalla completa para Estudio/Repaso -->
   <div id="studyOverlay">
-    <div id="studyHeader">
-      <div>
-        <button id="exitStudy">Salir</button>
-      </div>
-      <div>
-        <button id="toggleMode">Modo Día/Noche</button>
-      </div>
-    </div>
+    <button onclick="exitFullScreen()" class="btn btn-danger" style="position:absolute; top:10px; right:10px;">Salir</button>
     <div id="studyContent">
-      <!-- Aquí se mostrará la pregunta o flashcard -->
-      <div id="preguntaTexto" style="font-size: 1.5rem; margin-bottom:1rem;"></div>
-      <div id="opcionesContainer"></div>
-      <button id="btnFlip" class="hidden">Mostrar Respuesta</button>
-      <div id="respuestaTexto" class="hidden" style="margin-top:1rem;"></div>
-    </div>
-    <div id="studyFooter">
-      <div>
-        <span id="progreso">Pregunta 0 de 0</span>
+      <!-- Contenedor para la interfaz interactiva de estudio/repaso -->
+      <div id="studyCardContainer"></div>
+      <div class="nav-buttons">
+        <button id="prevBtn" class="btn btn-secondary">Anterior</button>
+        <span id="questionCounter"></span>
+        <button id="nextBtn" class="btn btn-secondary">Siguiente</button>
       </div>
-      <div>
-        <button class="difficultyBtn" data-dif="Fácil">Fácil</button>
-        <button class="difficultyBtn" data-dif="Medio">Medio</button>
-        <button class="difficultyBtn" data-dif="Difícil">Difícil</button>
-      </div>
-      <div>
-        <button id="prevQuestion">Anterior</button>
-        <button id="nextQuestion">Siguiente</button>
+      <div class="difficulty-panel">
+        <!-- Íconos para actualizar dificultad -->
+        <span onclick="setDifficulty('fácil')">😊</span>
+        <span onclick="setDifficulty('medio')">😐</span>
+        <span onclick="setDifficulty('difícil')">😞</span>
       </div>
     </div>
   </div>
-
+  
   <script>
-    // Actualiza esta variable con la URL de tu web app de Google Apps Script
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykzsEHZZcxbFYFXOPMOpS9NL02B3KdfUjXD2GKMlryrEe2vxjFIsZGY_h0ThgBxqGy/exec";
-
-    // Variables globales para la sección de estudio
-    let preguntasEstudio = [];
-    let indiceActual = 0;
-    let modoOscuro = false;
-
+    // Reemplaza con la URL real de tu Apps Script
+    const API_BASE_URL = "https://script.google.com/macros/s/your_script_id/exec";
+    
+    // Variables globales para la sesión de estudio/repaso
+    let mazosData = {};
+    let studyQuestions = [];
+    let currentQuestionIndex = 0;
+    let currentStudySubject = "";
+    let currentStudyTheme = "";
+    
     document.addEventListener("DOMContentLoaded", () => {
-      // Manejo de pestañas
-      document.getElementById("btnAgregar").addEventListener("click", () => {
-        document.getElementById("agregarSection").classList.remove("hidden");
-        document.getElementById("estudiarSection").classList.add("hidden");
-        document.getElementById("btnAgregar").classList.add("active");
-        document.getElementById("btnEstudiar").classList.remove("active");
+      // Mostrar sección "Agregar Preguntas" por defecto
+      switchSection('agregar');
+      loadMazos();
+      // Evento para mostrar/ocultar inputs de nuevo mazo
+      document.getElementById("newMazoBtn").addEventListener("click", () => {
+        let newMazoInputs = document.getElementById("newMazoInputs");
+        newMazoInputs.style.display = (newMazoInputs.style.display === "none") ? "block" : "none";
       });
-      document.getElementById("btnEstudiar").addEventListener("click", () => {
-        document.getElementById("agregarSection").classList.add("hidden");
-        document.getElementById("estudiarSection").classList.remove("hidden");
-        document.getElementById("btnAgregar").classList.remove("active");
-        document.getElementById("btnEstudiar").classList.add("active");
-      });
-
-      // Cargar preguntas para visualizar en Agregar (sin filtro)
-      cargarPreguntasDisponibles();
-
-      // Manejo del formulario de Agregar Preguntas
-      document.getElementById("formAgregar").addEventListener("submit", (e) => {
-        e.preventDefault();
-        agregarPreguntas();
-      });
-
-      // Manejo del formulario de Estudiar Preguntas
-      document.getElementById("formEstudiar").addEventListener("submit", (e) => {
-        e.preventDefault();
-        iniciarEstudio();
-      });
-
-      // Botones de navegación en la interfaz de estudio
-      document.getElementById("nextQuestion").addEventListener("click", () => {
-        if (indiceActual < preguntasEstudio.length - 1) {
-          indiceActual++;
-          mostrarPregunta();
-        }
-      });
-      document.getElementById("prevQuestion").addEventListener("click", () => {
-        if (indiceActual > 0) {
-          indiceActual--;
-          mostrarPregunta();
-        }
-      });
-      document.getElementById("exitStudy").addEventListener("click", () => {
-        salirEstudio();
-      });
-      document.getElementById("toggleMode").addEventListener("click", toggleDiaNoche);
-      document.getElementById("btnFlip").addEventListener("click", () => {
-        document.getElementById("respuestaTexto").classList.toggle("hidden");
-      });
-
-      // Botones de clasificación de dificultad (aquí se podrían guardar en el Sheet, según se amplíe la función)
-      document.querySelectorAll(".difficultyBtn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          alert("Se ha clasificado como: " + btn.dataset.dif);
-          // Aquí se podría hacer un update en el Sheet para guardar la dificultad
-        });
-      });
+      // Eventos de botones
+      document.getElementById("addQuestionsBtn").addEventListener("click", addQuestionsHandler);
+      document.getElementById("startStudyBtn").addEventListener("click", startStudyHandler);
+      document.getElementById("prevBtn").addEventListener("click", () => { changeQuestion(-1); });
+      document.getElementById("nextBtn").addEventListener("click", () => { changeQuestion(1); });
+      document.getElementById("startRepasoBtn").addEventListener("click", startRepasoHandler);
     });
-
-    // Función para cargar todas las preguntas disponibles y mostrarlas en la sección Agregar
-    function cargarPreguntasDisponibles() {
-      fetch(SCRIPT_URL + "?action=getQuestions")
-        .then(res => res.json())
-        .then(data => {
-          let html = "<table border='1' cellpadding='4'><tr><th>Asignatura</th><th>Tema</th><th>ID</th><th>Pregunta</th><th>Tipo</th></tr>";
-          data.forEach(q => {
-            html += `<tr>
-                      <td>${q.asignatura}</td>
-                      <td>${q.tema}</td>
-                      <td>${q.id}</td>
-                      <td>${q.pregunta}</td>
-                      <td>${q.tipo}</td>
-                    </tr>`;
-          });
-          html += "</table>";
-          document.getElementById("listaPreguntas").innerHTML = html;
-        })
-        .catch(err => {
-          document.getElementById("listaPreguntas").innerHTML = "Error al cargar preguntas.";
-          console.error(err);
-        });
+    
+    // Cambia la sección visible
+    function switchSection(section) {
+      document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
+      document.getElementById("section-" + section).classList.add("active");
+      if (["agregar", "estudiar", "repaso"].includes(section)) loadMazos();
     }
-
-    // Función para enviar las nuevas preguntas al Apps Script
-    function agregarPreguntas() {
-      const asignatura = document.getElementById("asignatura").value.trim();
-      const tema = document.getElementById("tema").value.trim();
-      const usmle = document.getElementById("usmle").checked;
-      const groupText = document.getElementById("groupText").value.trim();
-
-      if (!asignatura || !tema || !groupText) {
-        alert("Complete todos los campos");
+    
+    // Cargar mazos (asignaturas y temas) desde el Apps Script
+    function loadMazos() {
+      fetch(API_BASE_URL + "?action=getMazos")
+        .then(response => response.json())
+        .then(data => {
+          mazosData = data;
+          populateSelect("existingSubject", data);
+          populateSelect("studySubject", data);
+          populateMultiSelect("repasoSubject", data);
+          updateThemeSelect("existingSubject", "existingTheme");
+          updateThemeSelect("studySubject", "studyTheme");
+          updateMultiSelect("repasoSubject", "repasoTheme");
+        })
+        .catch(err => console.error("Error loading mazos:", err));
+    }
+    
+    // Poblar un select con las asignaturas
+    function populateSelect(selectId, data) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = "";
+      for (let subject in data) {
+        let option = document.createElement("option");
+        option.value = subject;
+        option.textContent = subject;
+        select.appendChild(option);
+      }
+    }
+    
+    // Poblar multi-select (sección repaso)
+    function populateMultiSelect(selectId, data) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = "";
+      for (let subject in data) {
+        let option = document.createElement("option");
+        option.value = subject;
+        option.textContent = subject;
+        select.appendChild(option);
+      }
+    }
+    
+    // Actualizar select de temas según la asignatura seleccionada
+    function updateThemeSelect(subjectSelectId, themeSelectId) {
+      const subject = document.getElementById(subjectSelectId).value;
+      const themeSelect = document.getElementById(themeSelectId);
+      themeSelect.innerHTML = "";
+      if (mazosData[subject]) {
+        mazosData[subject].forEach(theme => {
+          let option = document.createElement("option");
+          option.value = theme;
+          option.textContent = theme;
+          themeSelect.appendChild(option);
+        });
+      }
+    }
+    
+    // Actualizar multi-select de temas en repaso según asignaturas seleccionadas
+    function updateMultiSelect(subjectSelectId, themeSelectId) {
+      const subjectSelect = document.getElementById(subjectSelectId);
+      const themeSelect = document.getElementById(themeSelectId);
+      themeSelect.innerHTML = "";
+      Array.from(subjectSelect.selectedOptions).forEach(option => {
+        let subject = option.value;
+        if (mazosData[subject]) {
+          mazosData[subject].forEach(theme => {
+            let opt = document.createElement("option");
+            opt.value = theme;
+            opt.textContent = theme + " (" + subject + ")";
+            themeSelect.appendChild(opt);
+          });
+        }
+      });
+    }
+    
+    // Actualiza los select de temas al cambiar la asignatura
+    document.getElementById("existingSubject").addEventListener("change", () => {
+      updateThemeSelect("existingSubject", "existingTheme");
+    });
+    document.getElementById("studySubject").addEventListener("change", () => {
+      updateThemeSelect("studySubject", "studyTheme");
+    });
+    document.getElementById("repasoSubject").addEventListener("change", () => {
+      updateMultiSelect("repasoSubject", "repasoTheme");
+    });
+    
+    // Función para agregar preguntas (Sección Agregar Preguntas)
+    function addQuestionsHandler() {
+      let subject, theme;
+      if (document.getElementById("newMazoInputs").style.display === "block") {
+        subject = document.getElementById("newSubject").value.trim();
+        theme = document.getElementById("newTheme").value.trim();
+        if (!subject || !theme) {
+          document.getElementById("agregarMessage").textContent = "Ingrese nueva asignatura y tema.";
+          return;
+        }
+      } else {
+        subject = document.getElementById("existingSubject").value;
+        theme = document.getElementById("existingTheme").value;
+      }
+      let usmle = document.getElementById("usmleCheckbox").checked;
+      let questionsText = document.getElementById("questionsText").value.trim();
+      if (!questionsText) {
+        document.getElementById("agregarMessage").textContent = "Ingrese el grupo de preguntas.";
         return;
       }
-
-      const params = new URLSearchParams();
-      params.append("asignatura", asignatura);
-      params.append("tema", tema);
-      params.append("usmle", usmle);
-      params.append("groupText", groupText);
-
-      fetch(SCRIPT_URL, {
+      
+      let payload = { subject, theme, usmle, questionsText };
+      fetch(API_BASE_URL + "?action=addQuestions", {
         method: "POST",
-        body: params
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       })
-      .then(res => res.json())
+      .then(response => response.json())
       .then(data => {
-        if(data.status === "success"){
-          alert("Preguntas agregadas correctamente.");
-          // Recargar la lista de preguntas
-          cargarPreguntasDisponibles();
-          document.getElementById("formAgregar").reset();
+        if (data.status === "success") {
+          document.getElementById("agregarMessage").textContent = "Preguntas agregadas exitosamente.";
+          document.getElementById("questionsText").value = "";
+          document.getElementById("usmleCheckbox").checked = false;
+          document.getElementById("newMazoInputs").style.display = "none";
+          loadMazos();
+        } else {
+          document.getElementById("agregarMessage").textContent = "Error: " + data.message;
         }
       })
       .catch(err => {
-        console.error(err);
-        alert("Error al agregar preguntas.");
+        document.getElementById("agregarMessage").textContent = "Error: " + err;
       });
     }
-
-    // Función para iniciar la sesión de estudio
-    function iniciarEstudio() {
-      const asignatura = document.getElementById("asignaturaEstudio").value.trim();
-      const tema = document.getElementById("temaEstudio").value.trim();
-      if(!asignatura || !tema){
-        alert("Complete asignatura y tema");
-        return;
+    
+    // Función para iniciar el estudio (Sección Estudiar Preguntas)
+    function startStudyHandler() {
+      currentStudySubject = document.getElementById("studySubject").value;
+      currentStudyTheme = document.getElementById("studyTheme").value;
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen();
       }
-      fetch(`${SCRIPT_URL}?action=getQuestions&asignatura=${encodeURIComponent(asignatura)}&tema=${encodeURIComponent(tema)}`)
-        .then(res => res.json())
+      let url = API_BASE_URL + "?action=getQuestions&subject=" + encodeURIComponent(currentStudySubject) +
+                "&theme=" + encodeURIComponent(currentStudyTheme);
+      fetch(url)
+        .then(response => response.json())
         .then(data => {
-          if(data.length === 0){
-            alert("No se encontraron preguntas para estos criterios.");
+          studyQuestions = data;
+          if (studyQuestions.length === 0) {
+            alert("No hay preguntas para la asignatura y tema seleccionados.");
             return;
           }
-          preguntasEstudio = data;
-          indiceActual = 0;
-          mostrarPregunta();
-          activarFullScreen();
-          document.getElementById("studyOverlay").style.display = "flex";
+          currentQuestionIndex = 0;
+          showStudyQuestion();
+          document.getElementById("studyOverlay").classList.add("active");
         })
-        .catch(err => {
-          console.error(err);
-          alert("Error al cargar las preguntas.");
-        });
+        .catch(err => console.error("Error al cargar preguntas:", err));
     }
-
-    // Muestra la pregunta actual en la interfaz de estudio
-    function mostrarPregunta() {
-      const preguntaActual = preguntasEstudio[indiceActual];
-      document.getElementById("respuestaTexto").classList.add("hidden");
-      document.getElementById("btnFlip").classList.add("hidden");
-      document.getElementById("respuestaTexto").innerHTML = "";
-      document.getElementById("opcionesContainer").innerHTML = "";
-
-      document.getElementById("progreso").innerText = `Pregunta ${indiceActual+1} de ${preguntasEstudio.length}`;
-      document.getElementById("preguntaTexto").innerText = preguntaActual.pregunta;
-
-      if(preguntaActual.tipo === "T") {
-        // Pregunta de test: la cadena de opciones se espera en el campo "respuesta"
-        let opciones = preguntaActual.respuesta.split(/[\[\]]/).filter(opt => opt.trim() !== "");
-        // La primera opción es la correcta, se barajea para mostrar en orden aleatorio
-        opciones = shuffle(opciones);
-        opciones.forEach(opt => {
-          const btn = document.createElement("button");
-          btn.className = "optionBtn";
-          btn.innerText = opt.trim();
+    
+    // Mostrar la pregunta actual en el modo estudio/repaso
+    function showStudyQuestion() {
+      let container = document.getElementById("studyCardContainer");
+      container.innerHTML = "";
+      if (currentQuestionIndex < 0 || currentQuestionIndex >= studyQuestions.length) return;
+      
+      let questionObj = studyQuestions[currentQuestionIndex];
+      document.getElementById("questionCounter").textContent = (currentQuestionIndex + 1) + " / " + studyQuestions.length;
+      let card = document.createElement("div");
+      card.className = "card";
+      
+      let questionText = document.createElement("div");
+      questionText.className = "question";
+      questionText.textContent = questionObj["Pregunta"];
+      card.appendChild(questionText);
+      
+      // Diferenciar entre Test y Flashcard
+      if (questionObj["Test o Flashcard"].toUpperCase() === "T") {
+        let optionsDiv = document.createElement("div");
+        optionsDiv.className = "options";
+        // Se asume que la respuesta contiene opciones entre corchetes, por ejemplo: "[opción1] [opción2] [opción3] [opción4]"
+        let rawOptions = questionObj["Respuesta"];
+        let regex = /\[([^\]]+)\]/g, match, options = [];
+        while ((match = regex.exec(rawOptions)) !== null) {
+          options.push(match[1]);
+        }
+        if (options.length === 0) options.push(rawOptions);
+        options = shuffleArray(options);
+        options.forEach(opt => {
+          let btn = document.createElement("button");
+          btn.textContent = opt;
           btn.addEventListener("click", () => {
-            if(opt.trim() === preguntaActual.respuesta.split(/[\[\]]/)[1].trim()){
-              btn.classList.add("correct");
-            } else {
-              btn.classList.add("incorrect");
-            }
+            let correctRegex = /\[([^\]]+)\]/;
+            let correctMatch = correctRegex.exec(questionObj["Respuesta"]);
+            let correctOption = correctMatch ? correctMatch[1] : "";
+            if (opt === correctOption) btn.classList.add("correct");
+            else btn.classList.add("incorrect");
+            showAnswer(card, questionObj["Explicación"]);
           });
-          document.getElementById("opcionesContainer").appendChild(btn);
+          optionsDiv.appendChild(btn);
         });
+        card.appendChild(optionsDiv);
       } else {
-        // Pregunta flashcard: mostrar botón para revelar respuesta y explicación
-        document.getElementById("btnFlip").classList.remove("hidden");
-        document.getElementById("respuestaTexto").innerHTML = `<strong>Respuesta:</strong> ${preguntaActual.respuesta}<br>
-                                                                <strong>Explicación:</strong> ${preguntaActual.explicacion}`;
+        let revealBtn = document.createElement("button");
+        revealBtn.className = "btn btn-secondary";
+        revealBtn.textContent = "Mostrar Respuesta";
+        revealBtn.addEventListener("click", () => {
+          showAnswer(card, questionObj["Respuesta"] + " - " + questionObj["Explicación"]);
+        });
+        card.appendChild(revealBtn);
       }
+      container.appendChild(card);
     }
-
-    // Función para salir de la sesión de estudio
-    function salirEstudio() {
-      document.getElementById("studyOverlay").style.display = "none";
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
+    
+    // Mostrar la respuesta y explicación en la tarjeta
+    function showAnswer(card, answerText) {
+      let answerDiv = card.querySelector(".answer");
+      if (!answerDiv) {
+        answerDiv = document.createElement("div");
+        answerDiv.className = "answer";
+        card.appendChild(answerDiv);
       }
+      answerDiv.textContent = answerText;
     }
-
-    // Función para alternar día/noche (modificando variables CSS)
-    function toggleDiaNoche() {
-      modoOscuro = !modoOscuro;
-      if(modoOscuro){
-        document.documentElement.style.setProperty('--bgStudy', '#222');
-        document.documentElement.style.setProperty('--textStudy', '#eee');
-      } else {
-        document.documentElement.style.setProperty('--bgStudy', '#fff');
-        document.documentElement.style.setProperty('--textStudy', '#000');
-      }
+    
+    // Navegar entre preguntas en estudio/repaso
+    function changeQuestion(direction) {
+      currentQuestionIndex += direction;
+      if (currentQuestionIndex < 0) currentQuestionIndex = 0;
+      if (currentQuestionIndex >= studyQuestions.length) currentQuestionIndex = studyQuestions.length - 1;
+      showStudyQuestion();
     }
-
-    // Función para activar full screen
-    function activarFullScreen() {
-      let elem = document.documentElement;
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-      } else if (elem.webkitRequestFullscreen) { /* Safari */
-        elem.webkitRequestFullscreen();
-      } else if (elem.msRequestFullscreen) { /* IE11 */
-        elem.msRequestFullscreen();
-      }
+    
+    // Actualizar la dificultad de la pregunta actual
+    function setDifficulty(level) {
+      if (studyQuestions.length === 0) return;
+      let questionObj = studyQuestions[currentQuestionIndex];
+      let payload = {
+        subject: questionObj["Asignatura"],
+        theme: questionObj["Tema"],
+        id: questionObj["id#"],
+        difficulty: level
+      };
+      fetch(API_BASE_URL + "?action=updateDifficulty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === "success") alert("Dificultad actualizada a " + level);
+        else alert("Error al actualizar dificultad: " + data.message);
+      })
+      .catch(err => alert("Error: " + err));
     }
-
-    // Función auxiliar para barajar un array
-    function shuffle(array) {
-      let currentIndex = array.length, randomIndex;
-      while (currentIndex !== 0) {
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex--;
-        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    
+    // Salir del modo pantalla completa
+    function exitFullScreen() {
+      if (document.exitFullscreen) document.exitFullscreen();
+      document.getElementById("studyOverlay").classList.remove("active");
+    }
+    
+    // Iniciar sesión de repaso (Sección Repaso)
+    function startRepasoHandler() {
+      let subjects = Array.from(document.getElementById("repasoSubject").selectedOptions).map(opt => opt.value);
+      let themes = Array.from(document.getElementById("repasoTheme").selectedOptions).map(opt => opt.value);
+      let difficulty = document.getElementById("repasoDifficulty").value;
+      let usmle = document.getElementById("repasoUsmle").checked;
+      let url = API_BASE_URL + "?action=getQuestions" +
+                "&subject=" + encodeURIComponent(subjects.join(",")) +
+                "&theme=" + encodeURIComponent(themes.join(",")) +
+                (usmle ? "&usmle=true" : "") +
+                (difficulty ? "&difficulty=" + encodeURIComponent(difficulty) : "");
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          if (data.length === 0) {
+            document.getElementById("repasoMessage").textContent = "No se encontraron preguntas con esos filtros.";
+            return;
+          }
+          studyQuestions = data;
+          currentQuestionIndex = 0;
+          let timerMinutes = parseInt(document.getElementById("repasoTimer").value);
+          if (timerMinutes > 0) startTimer(timerMinutes);
+          if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+          document.getElementById("studyOverlay").classList.add("active");
+          showStudyQuestion();
+        })
+        .catch(err => document.getElementById("repasoMessage").textContent = "Error: " + err);
+    }
+    
+    // Iniciar timer para repaso
+    function startTimer(minutes) {
+      let timerDisplay = document.createElement("div");
+      timerDisplay.className = "timer";
+      timerDisplay.style.fontSize = "24px";
+      timerDisplay.style.textAlign = "center";
+      document.getElementById("studyContent").insertBefore(timerDisplay, document.getElementById("studyCardContainer"));
+      let timeLeft = minutes * 60;
+      let timerInterval = setInterval(() => {
+        let m = Math.floor(timeLeft / 60);
+        let s = timeLeft % 60;
+        timerDisplay.textContent = "Tiempo restante: " + m + "m " + s + "s";
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          alert("Se acabó el tiempo de repaso.");
+          exitFullScreen();
+        }
+        timeLeft--;
+      }, 1000);
+    }
+    
+    // Función auxiliar para barajar un arreglo
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
       }
       return array;
     }
