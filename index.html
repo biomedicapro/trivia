@@ -52,8 +52,9 @@
       max-width: 800px;
       margin: 0 auto;
     }
-    form select,
+    form input[type="text"],
     form textarea,
+    form select,
     form input[type="datetime-local"] {
       width: 100%;
       padding: 10px;
@@ -170,18 +171,18 @@
     <h2>Pegar Grupo de Preguntas</h2>
     <form id="grupoPreguntasForm">
       <label>Asignatura (obligatorio):</label>
-      <select id="grupoAsignatura">
-        <option value="">-- Seleccionar Asignatura --</option>
-      </select>
+      <input type="text" id="grupoAsignaturaInput" list="asignaturaList" placeholder="Escribe o selecciona asignatura">
+      <datalist id="asignaturaList"></datalist>
+      
       <label>Tema (obligatorio):</label>
-      <select id="grupoTema">
-        <option value="">-- Seleccionar Tema --</option>
-      </select>
+      <input type="text" id="grupoTemaInput" list="temaList" placeholder="Escribe o selecciona temática">
+      <datalist id="temaList"></datalist>
+      
       <label>Es USMLE?</label>
       <input type="checkbox" id="grupoUsmle">
       <label>
         Pega las preguntas. Usa el siguiente formato:<br>
-        • Para cada pregunta, separa las casillas (Pregunta, Respuesta, Explicación) con comas.<br>
+        • Para cada pregunta, separa los campos (Pregunta, Respuesta, Explicación) con comas.<br>
         • Separa cada pregunta con punto y coma (“;”).<br>
         Ejemplo: <br>
         ¿Función de la hemoglobina?, Transportar oxígeno, La hemoglobina transporta oxígeno; 
@@ -330,15 +331,17 @@
       .catch(err => console.error(err));
     }
 
-    // Agregar un grupo de preguntas (flashcards o test) de acuerdo al formato ingresado
+    // Agregar un grupo de preguntas (flashcards o test) usando el formato:
+    // • Cada pregunta: campos separados por comas.
+    // • Las preguntas se separan con punto y coma (";").
     document.getElementById('grupoPreguntasForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
-      // Validar que se haya seleccionado asignatura y tema
-      const asignatura = document.getElementById('grupoAsignatura').value;
-      const tema = document.getElementById('grupoTema').value;
+      // Validar que se haya ingresado asignatura y tema
+      const asignatura = document.getElementById('grupoAsignaturaInput').value.trim();
+      const tema = document.getElementById('grupoTemaInput').value.trim();
       if(asignatura === "" || tema === ""){
-        alert("Debe seleccionar asignatura y tema.");
+        alert("Debe escribir o seleccionar asignatura y tema.");
         return;
       }
       
@@ -377,6 +380,8 @@
         let noti = document.getElementById('notificacion');
         noti.style.display = "block";
         setTimeout(() => { noti.style.display = "none"; }, 3000);
+        // Actualizar opciones de asignatura y tema con los nuevos datos
+        actualizarOpciones();
       });
     });
 
@@ -527,38 +532,68 @@
       // Aquí se cargaría la sesión de repaso correspondiente
     }
 
-    // Función para cargar opciones de asignatura y tema en los selects
-    function cargarOpciones() {
-      // Simulamos opciones existentes
-      const asignaturas = ["Biología", "Química", "Física"];
-      const temas = ["Anatomía", "Bioquímica", "Mecánica"];
-      
-      // IDs de selects a poblar
-      const selectAsignaturaIDs = ['estudioAsignatura','repasarAsignatura','programarAsignatura','grupoAsignatura'];
-      const selectTemaIDs = ['estudioTema','repasarTema','programarTema','grupoTema'];
-
-      selectAsignaturaIDs.forEach(id => {
-        const select = document.getElementById(id);
-        select.innerHTML = '<option value="">-- Seleccionar Asignatura --</option>';
-        asignaturas.forEach(a => {
-          const opt = document.createElement("option");
-          opt.value = a;
-          opt.innerText = a;
-          select.appendChild(opt);
+    // Función para actualizar las opciones de asignatura y tema consultando el sheet
+    function actualizarOpciones() {
+      const data = {
+        action: 'getPreguntas',
+        asignatura: "",
+        tema: "",
+        clasificacion: "",
+        esUsmle: ""
+      };
+      enviarDatos(data, function(res) {
+        let allPreguntas = res.preguntas || [];
+        let asignaturasSet = new Set();
+        let temasSet = new Set();
+        allPreguntas.forEach(q => {
+          if(q.asignatura) asignaturasSet.add(q.asignatura);
+          if(q.tema) temasSet.add(q.tema);
         });
-      });
-      selectTemaIDs.forEach(id => {
-        const select = document.getElementById(id);
-        select.innerHTML = '<option value="">-- Seleccionar Tema --</option>';
+        let asignaturas = Array.from(asignaturasSet);
+        let temas = Array.from(temasSet);
+        // Actualizar los datalist en la sección Crear preguntas
+        let asignaturaList = document.getElementById('asignaturaList');
+        let temaList = document.getElementById('temaList');
+        asignaturaList.innerHTML = "";
+        asignaturas.forEach(a => {
+          let opt = document.createElement("option");
+          opt.value = a;
+          asignaturaList.appendChild(opt);
+        });
+        temaList.innerHTML = "";
         temas.forEach(t => {
-          const opt = document.createElement("option");
+          let opt = document.createElement("option");
           opt.value = t;
-          opt.innerText = t;
-          select.appendChild(opt);
+          temaList.appendChild(opt);
+        });
+        // Actualizar los selects de las secciones Estudiar, Repasar y Programar
+        const selectAsignaturaIDs = ['estudioAsignatura','repasarAsignatura','programarAsignatura'];
+        const selectTemaIDs = ['estudioTema','repasarTema','programarTema'];
+        selectAsignaturaIDs.forEach(id => {
+          const select = document.getElementById(id);
+          select.innerHTML = '<option value="">-- Seleccionar Asignatura --</option>';
+          asignaturas.forEach(a => {
+            const opt = document.createElement("option");
+            opt.value = a;
+            opt.innerText = a;
+            select.appendChild(opt);
+          });
+        });
+        selectTemaIDs.forEach(id => {
+          const select = document.getElementById(id);
+          select.innerHTML = '<option value="">-- Seleccionar Tema --</option>';
+          temas.forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t;
+            opt.innerText = t;
+            select.appendChild(opt);
+          });
         });
       });
     }
-    window.onload = cargarOpciones;
+    window.onload = function() {
+      actualizarOpciones();
+    }
   </script>
 </body>
 </html>
