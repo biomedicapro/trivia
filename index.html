@@ -7,84 +7,54 @@
   <style>
     /* Estilos generales */
     * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
+      margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif;
     }
     body {
-      background-color: #f5f5f5;
-      color: #333;
-      line-height: 1.6;
+      background-color: #f5f5f5; color: #333; line-height: 1.6;
     }
     header {
-      background-color: #fff;
-      padding: 10px 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
+      background-color: #fff; padding: 10px 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000;
     }
     header nav {
-      display: flex;
-      justify-content: space-around;
+      display: flex; justify-content: space-around;
     }
     header nav a {
-      text-decoration: none;
-      color: #333;
-      padding: 8px 12px;
-      border-radius: 4px;
+      text-decoration: none; color: #333; padding: 8px 12px; border-radius: 4px;
       transition: background-color 0.3s;
     }
     header nav a:hover, header nav a.active {
       background-color: #ddd;
     }
-    /* Contenedores de sección */
+    /* Secciones */
     .section {
-      display: none;
-      padding: 20px;
+      display: none; padding: 20px;
     }
     .section.active {
       display: block;
     }
     /* Formularios y botones */
     form {
-      max-width: 800px;
-      margin: 0 auto;
+      max-width: 800px; margin: 0 auto;
     }
     form input, form select, form textarea, form input[type="datetime-local"] {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 16px;
+      width: 100%; padding: 10px; margin-bottom: 10px;
+      border: 1px solid #ccc; border-radius: 4px; font-size: 16px;
     }
     form button {
-      padding: 10px 20px;
-      border: none;
-      background-color: #333;
-      color: #fff;
-      font-size: 16px;
-      border-radius: 4px;
-      cursor: pointer;
+      padding: 10px 20px; border: none; background-color: #333;
+      color: #fff; font-size: 16px; border-radius: 4px; cursor: pointer;
       transition: background-color 0.3s;
     }
     form button:hover {
       background-color: #555;
     }
-    /* Notificaciones y mensajes de cargue */
+    /* Notificaciones y mensajes */
     #loadingMessage, #notificacion {
-      text-align: center;
-      margin-top: 10px;
-      font-weight: bold;
+      text-align: center; margin-top: 10px; font-weight: bold;
     }
-    #loadingMessage {
-      color: #555;
-    }
-    #notificacion {
-      color: green;
-    }
+    #loadingMessage { color: #555; }
+    #notificacion { color: green; }
   </style>
 </head>
 <body>
@@ -129,7 +99,7 @@
   <!-- SECCIÓN ESTUDIAR -->
   <section id="estudiar" class="section">
     <h2>Estudiar</h2>
-    <button onclick="cargarFiltrosEstudio()">Cargar preguntas disponibles</button>
+    <button onclick="cargarFiltros()">Cargar preguntas disponibles</button>
     <div>
       <label>Asignatura:</label>
       <select id="estudioAsignatura"></select>
@@ -142,7 +112,7 @@
   <!-- SECCIÓN REPASAR -->
   <section id="repasar" class="section">
     <h2>Repasar</h2>
-    <button onclick="cargarFiltrosEstudio()">Cargar preguntas disponibles</button>
+    <button onclick="cargarFiltros()">Cargar preguntas disponibles</button>
     <div>
       <label>Asignatura:</label>
       <select id="repasarAsignatura"></select>
@@ -204,16 +174,16 @@
       e.preventDefault();
       const asignatura = document.getElementById('grupoAsignaturaInput').value.trim();
       const tema = document.getElementById('grupoTemaInput').value.trim();
-      if(asignatura === "" || tema === ""){
+      if (asignatura === "" || tema === "") {
         alert("Debe escribir o seleccionar asignatura y tema.");
         return;
       }
       let originalText = document.getElementById('grupoTexto').value.trim();
-      if(originalText === ""){
+      if (originalText === "") {
         alert("Por favor, ingrese el grupo de preguntas.");
         return;
       }
-      // Transformar el texto: preguntas separadas por ";" y campos por ","
+      // Transformar el texto: cada pregunta separada por ";" y campos por ","
       let questionsArray = originalText.split(";").map(q => q.trim()).filter(q => q !== "");
       let transformedQuestions = questionsArray.map(q => {
         let fields = q.split(",").map(f => f.trim());
@@ -237,7 +207,7 @@
         const noti = document.getElementById('notificacion');
         noti.style.display = "block";
         setTimeout(() => { noti.style.display = "none"; }, 3000);
-        actualizarOpciones(); // Actualiza opciones con los nuevos datos
+        actualizarOpciones(); // Actualiza las opciones con los nuevos datos
       });
     });
     
@@ -248,13 +218,13 @@
         let asignaturasSet = new Set();
         let temasSet = new Set();
         allPreguntas.forEach(q => {
-          if(q.asignatura) asignaturasSet.add(q.asignatura);
-          if(q.tema) temasSet.add(q.tema);
+          if (q.asignatura) asignaturasSet.add(q.asignatura);
+          if (q.tema) temasSet.add(q.tema);
         });
         let asignaturas = Array.from(asignaturasSet);
         let temas = Array.from(temasSet);
         
-        // Actualizar datalists de la sección Crear preguntas
+        // Actualizar datalists en la sección Crear preguntas
         const asignaturaList = document.getElementById('asignaturaList');
         const temaList = document.getElementById('temaList');
         asignaturaList.innerHTML = "";
@@ -296,8 +266,8 @@
       });
     }
     
-    // Función para cargar los filtros (opciones) en Estudiar y Repasar
-    function cargarFiltrosEstudio() {
+    // Función para cargar los filtros (asignatura y tema) en Estudiar y Repasar
+    function cargarFiltros() {
       actualizarOpciones();
       alert("Filtros actualizados con las preguntas disponibles.");
     }
@@ -307,14 +277,14 @@
       const asignatura = document.getElementById('estudioAsignatura').value;
       const tema = document.getElementById('estudioTema').value;
       alert(`Iniciando estudio para: ${asignatura} - ${tema}`);
-      // Aquí se cargarían y mostrarían las preguntas de estudio
+      // Aquí se implementaría la carga y visualización de las preguntas de estudio
     }
     
     function iniciarRepaso() {
       const asignatura = document.getElementById('repasarAsignatura').value;
       const tema = document.getElementById('repasarTema').value;
       alert(`Iniciando repaso para: ${asignatura} - ${tema}`);
-      // Aquí se cargarían y mostrarían las preguntas de repaso
+      // Aquí se implementaría la carga y visualización de las preguntas de repaso
     }
     
     // Actualizar opciones al cargar la página
