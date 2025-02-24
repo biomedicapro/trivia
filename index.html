@@ -4,552 +4,430 @@
   <meta charset="UTF-8">
   <title>Aplicación de Preguntas</title>
   <style>
-    /* Estilos Globales */
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f5f5f5;
+    /* ----------------- Global Styles ----------------- */
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f0f0f0; }
+    header { background: #333; color: #fff; padding: 10px; text-align: center; }
+    nav button { margin: 0 5px; padding: 10px 20px; background: #444; color: #fff; border: none; cursor: pointer; }
+    nav button.active { background: #008CBA; }
+    section { display: none; padding: 20px; }
+    section.active { display: block; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; }
+    select, input[type="text"], textarea { width: 100%; padding: 8px; box-sizing: border-box; }
+    textarea { height: 100px; }
+    .checkbox-group { display: flex; align-items: center; }
+    .checkbox-group input { margin-right: 5px; }
+    button { cursor: pointer; }
+    
+    /* ----------------- Área de Estudio / Repaso ----------------- */
+    #studyArea, #studyAreaRepaso {
+      position: relative;
+      background: #fff;
+      margin: 20px auto;
+      max-width: 800px;
+      min-height: 400px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
     }
-    header {
-      background-color: #333;
-      color: #fff;
-      padding: 10px;
-      text-align: center;
-    }
-    nav {
+    .card { position: relative; width: 100%; height: 100%; perspective: 1000px; }
+    .card-inner { position: absolute; width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d; }
+    .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; padding: 20px; box-sizing: border-box; }
+    .face-question { background: #fff; }
+    .face-answer { background: #e0ffe0; transform: rotateY(180deg); }
+    .face-explanation { background: #e0e0ff; transform: rotateY(180deg); }
+    .control-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
       display: flex;
-      justify-content: center;
-      background-color: #444;
+      flex-direction: column;
     }
-    nav button {
-      background: none;
-      border: none;
-      color: #fff;
-      padding: 15px 20px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    nav button.active {
-      background-color: #666;
-    }
-    .container {
-      padding: 20px;
-    }
-    /* Secciones */
-    .section {
-      display: none;
-    }
-    .section.active {
-      display: block;
-    }
-    /* Formularios */
-    .form-group {
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-    }
-    input[type="text"],
-    input[type="date"],
-    select,
-    textarea {
-      width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
-    }
-    textarea {
-      height: 100px;
-    }
-    button {
-      padding: 10px 15px;
-      font-size: 16px;
-      cursor: pointer;
-      margin: 5px;
-    }
-    /* Tarjetas de Estudio */
-    .tarjeta {
-      background-color: #fff;
-      padding: 20px;
-      margin: 10px auto;
-      border-radius: 5px;
-      max-width: 600px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-      transition: all 0.5s ease;
-    }
-    .tarjeta.hidden {
-      opacity: 0;
-      transform: translateX(-100%);
-    }
-    .tarjeta.visible {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    .nav-estudio {
-      text-align: center;
-      margin-top: 20px;
-    }
-    .icon-panel {
-      margin-top: 15px;
-      text-align: center;
-    }
-    .icon-panel button {
-      margin: 0 10px;
-      padding: 10px;
-      font-size: 16px;
-    }
-    /* Sección Repaso */
-    .calendario {
-      margin: 20px 0;
-    }
-    .filter-group {
-      margin-bottom: 10px;
-    }
+    .control-panel button { margin: 5px; padding: 5px 10px; }
+    .dark-mode { background: #222; color: #eee; }
+    
+    /* ----------------- Calendario (simplificado) ----------------- */
+    #calendar { max-width: 300px; margin: 20px auto; background: #fff; padding: 10px; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
   <header>
     <h1>Aplicación de Preguntas</h1>
+    <nav>
+      <button id="navAgregar" class="active">Agregar Preguntas</button>
+      <button id="navEstudiar">Estudiar Preguntas</button>
+      <button id="navRepaso">Repaso</button>
+    </nav>
   </header>
-  <nav>
-    <button id="nav-agregar" class="active">Agregar Preguntas</button>
-    <button id="nav-estudiar">Estudiar Preguntas</button>
-    <button id="nav-repaso">Repaso</button>
-  </nav>
-  <div class="container">
-    <!-- Sección Agregar Preguntas -->
-    <div id="seccion-agregar" class="section active">
-      <h2>Agregar Preguntas</h2>
-      <div class="form-group">
-        <label>Seleccionar Mazo Existente</label>
-        <select id="select-asignatura"></select>
-        <select id="select-tema"></select>
-      </div>
-      <div class="form-group">
-        <button id="btn-nuevo-mazo">Nuevo Mazo</button>
-        <div id="nuevo-mazo-fields" style="display:none;">
-          <input type="text" id="nuevo-asignatura" placeholder="Nueva Asignatura">
-          <input type="text" id="nuevo-tema" placeholder="Nuevo Tema">
-        </div>
-      </div>
-      <div class="form-group">
-        <label><input type="checkbox" id="usmle-checkbox"> USMLE</label>
-      </div>
-      <div class="form-group">
-        <label>Entrada de Grupo de Preguntas (Formato mixto)</label>
-        <textarea id="entrada-preguntas" placeholder='Ejemplos:
-Flashcards: pregunta1, respuesta1, explicación1, F; pregunta2, respuesta2, explicación2, F;
-Test: pregunta3, opción1 / opción2 / opción3 / opción4, explicación3, T; pregunta4, opción1 / opción2 / opción3 / opción4, explicación4, T;'></textarea>
-      </div>
-      <div class="form-group">
-        <button id="btn-agregar">Agregar Preguntas</button>
-      </div>
-      <div id="mensaje-agregar"></div>
+  
+  <!-- Sección Agregar Preguntas -->
+  <section id="sectionAgregar" class="active">
+    <h2>Agregar Preguntas</h2>
+    <div class="form-group">
+      <label>Seleccionar Mazo Existente</label>
+      <select id="selectAsignatura"></select>
+      <select id="selectTema"></select>
     </div>
-
-    <!-- Sección Estudiar Preguntas -->
-    <div id="seccion-estudiar" class="section">
-      <h2>Estudiar Preguntas</h2>
-      <div class="form-group">
-        <label>Seleccionar Asignatura</label>
-        <select id="select-estudio-asignatura"></select>
-      </div>
-      <div class="form-group">
-        <label>Seleccionar Tema</label>
-        <select id="select-estudio-tema"></select>
-      </div>
-      <div class="form-group">
-        <button id="btn-iniciar-estudio">Iniciar Estudio (Pantalla Completa)</button>
-      </div>
-      <div id="contenedor-estudio" style="display:none;">
-        <div id="tarjeta-estudio" class="tarjeta hidden"></div>
-        <div class="nav-estudio">
-          <button id="btn-anterior">Anterior</button>
-          <span id="contador-pregunta"></span>
-          <button id="btn-siguiente">Siguiente</button>
-        </div>
-        <div class="icon-panel">
-          <button data-dificultad="Fácil" class="btn-dificultad">Fácil</button>
-          <button data-dificultad="Medio" class="btn-dificultad">Medio</button>
-          <button data-dificultad="Difícil" class="btn-dificultad">Difícil</button>
-        </div>
-      </div>
-      <div id="mensaje-estudio"></div>
+    <div class="form-group">
+      <label>O crear nuevo mazo</label>
+      <input type="text" id="newAsignatura" placeholder="Nueva Asignatura">
+      <input type="text" id="newTema" placeholder="Nuevo Tema">
     </div>
-
-    <!-- Sección Repaso -->
-    <div id="seccion-repaso" class="section">
-      <h2>Repaso</h2>
-      <div class="form-group">
-        <label>Filtros Avanzados</label>
-        <div class="filter-group">
-          <select id="filtro-asignatura" multiple size="4"></select>
-        </div>
-        <div class="filter-group">
-          <select id="filtro-tema" multiple size="4"></select>
-        </div>
-        <div class="filter-group">
-          <select id="filtro-dificultad">
-            <option value="">Todas las dificultades</option>
-            <option value="Fácil">Fácil</option>
-            <option value="Medio">Medio</option>
-            <option value="Difícil">Difícil</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label><input type="checkbox" id="filtro-usmle"> USMLE</label>
-        </div>
-        <div class="filter-group">
-          <label>Timer (segundos):</label>
-          <input type="text" id="filtro-timer" placeholder="0 para desactivar">
-        </div>
-        <div class="filter-group calendario">
-          <label>Programar Sesión (Calendario):</label>
-          <input type="date" id="programar-sesion">
-        </div>
-        <div class="form-group">
-          <button id="btn-iniciar-repaso">Iniciar Sesión de Repaso</button>
-        </div>
-      </div>
-      <div id="contenedor-repaso" style="display:none;">
-        <div id="repaso-lista"></div>
-        <div id="timer-display"></div>
-        <div id="calificacion-usmle"></div>
-      </div>
-      <div id="mensaje-repaso"></div>
+    <div class="form-group checkbox-group">
+      <input type="checkbox" id="checkUSMLE">
+      <label for="checkUSMLE">USMLE</label>
     </div>
-  </div>
-
+    <div class="form-group">
+      <label>Entrada de Grupo de Preguntas (Formato Mixto)</label>
+      <textarea id="inputPreguntas" placeholder="Ejemplos:
+Flashcards:
+  pregunta1, respuesta1, explicación1, F; pregunta2, respuesta2, explicación2, F;
+Test:
+  pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicación3, T; pregunta4, opción correcta / opción 2 / opción 3 / opción 4, explicación4, T;"></textarea>
+    </div>
+    <button id="btnAgregar">Agregar Preguntas</button>
+    <div id="agregarStatus"></div>
+  </section>
+  
+  <!-- Sección Estudiar Preguntas -->
+  <section id="sectionEstudiar">
+    <h2>Estudiar Preguntas</h2>
+    <div class="form-group">
+      <label>Selecciona Mazo de Estudio</label>
+      <select id="selectEstudioAsignatura"></select>
+      <select id="selectEstudioTema"></select>
+    </div>
+    <button id="btnIniciarEstudio">Iniciar Estudio</button>
+    <div id="studyContainer" style="display:none;">
+      <!-- Área de estudio a pantalla completa (para la pregunta) -->
+      <div id="studyArea">
+        <div class="card" id="studyCard">
+          <div class="card-inner" id="cardInner">
+            <div class="card-face face-question" id="faceQuestion"></div>
+            <div class="card-face face-answer" id="faceAnswer"></div>
+            <div class="card-face face-explanation" id="faceExplanation"></div>
+          </div>
+        </div>
+        <div class="control-panel">
+          <button id="btnToggleDayNight">Día/Noche</button>
+          <button id="btnSalirEstudio">Salir</button>
+          <button id="btnPrevFace">Anterior Cara</button>
+          <button id="btnNextFace">Siguiente Cara</button>
+          <button id="btnPrevQuestion">Pregunta Anterior</button>
+          <button id="btnNextQuestion">Pregunta Siguiente</button>
+          <button class="btnDificultad" data-dificultad="Fácil">Fácil</button>
+          <button class="btnDificultad" data-dificultad="Medio">Medio</button>
+          <button class="btnDificultad" data-dificultad="Difícil">Difícil</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Sección Repaso -->
+  <section id="sectionRepaso">
+    <h2>Repaso</h2>
+    <div class="form-group">
+      <label>Filtrar Preguntas</label>
+      <select id="filterAsignatura" multiple></select>
+      <select id="filterTema" multiple></select>
+      <select id="filterDificultad">
+        <option value="">Todas</option>
+        <option value="Fácil">Fácil</option>
+        <option value="Medio">Medio</option>
+        <option value="Difícil">Difícil</option>
+      </select>
+      <div class="checkbox-group">
+        <input type="checkbox" id="filterUSMLE">
+        <label for="filterUSMLE">USMLE</label>
+      </div>
+      <div class="form-group">
+        <label>Modo Repaso</label>
+        <select id="modoRepaso">
+          <option value="inmediato">Repasar Inmediato</option>
+          <option value="programado">Programar Repaso</option>
+        </select>
+      </div>
+    </div>
+    <div id="calendar" style="display:none;">
+      <!-- Calendario visual (simplificado) -->
+      <p>Calendario: Selecciona una fecha para programar el repaso</p>
+      <input type="date" id="repasoFecha">
+      <button id="btnProgramarRepaso">Programar</button>
+    </div>
+    <button id="btnIniciarRepaso">Iniciar Repaso</button>
+    <div id="repasoContainer" style="display:none;">
+      <!-- Reutiliza la misma interfaz de estudio -->
+      <div id="studyAreaRepaso">
+        <div class="card" id="repasoCard">
+          <div class="card-inner" id="repasoCardInner">
+            <div class="card-face face-question" id="repasoFaceQuestion"></div>
+            <div class="card-face face-answer" id="repasoFaceAnswer"></div>
+            <div class="card-face face-explanation" id="repasoFaceExplanation"></div>
+          </div>
+        </div>
+        <div class="control-panel">
+          <button id="btnToggleDayNightRepaso">Día/Noche</button>
+          <button id="btnSalirRepaso">Salir</button>
+          <button id="btnPrevFaceRepaso">Anterior Cara</button>
+          <button id="btnNextFaceRepaso">Siguiente Cara</button>
+          <button id="btnPrevQuestionRepaso">Pregunta Anterior</button>
+          <button id="btnNextQuestionRepaso">Pregunta Siguiente</button>
+          <button class="btnDificultadRepaso" data-dificultad="Fácil">Fácil</button>
+          <button class="btnDificultadRepaso" data-dificultad="Medio">Medio</button>
+          <button class="btnDificultadRepaso" data-dificultad="Difícil">Difícil</button>
+        </div>
+      </div>
+      <div id="repasoInfo">
+        <!-- Se mostrará la calificación y número de preguntas USMLE, si corresponde -->
+      </div>
+    </div>
+  </section>
+  
   <script>
-    // URL del Apps Script (reemplaza YOUR_SCRIPT_ID)
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcaQA4QRN6h9UXJvxzPpls9QMAzpTaa4NaO5ZIGKhzD2RMJuWyQhgSK9cWJpG_uHFy/exec';
-
-    // Variables globales para la sección de estudio y mapeo de mazos
+    // ----------------- CONFIGURACIÓN -----------------
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLvwTUKSOYtSb-2wqU2ZNrqx63KT39W8nm3bpylGDF_grpN7_f2CUcTt8uG6Ir7zGw/exec';
+    
+    // Variables globales para el estudio/repaso
     let preguntasEstudio = [];
-    let indiceActual = 0;
-    let mazoMapping = {}; // Objeto: asignatura -> Set(temas)
+    let indicePregunta = 0;
+    let caraActual = 0; // 0: pregunta, 1: respuesta, 2: explicación
 
-    // Navegación entre secciones
-    document.getElementById("nav-agregar").addEventListener("click", () => showSection("seccion-agregar"));
-    document.getElementById("nav-estudiar").addEventListener("click", () => showSection("seccion-estudiar"));
-    document.getElementById("nav-repaso").addEventListener("click", () => showSection("seccion-repaso"));
-
-    function showSection(sectionId) {
-      document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
-      document.getElementById(sectionId).classList.add("active");
-      document.querySelectorAll("nav button").forEach(btn => btn.classList.remove("active"));
-      document.getElementById("nav-" + sectionId.split('-')[1]).classList.add("active");
-    }
-
-    // Manejo de "Nuevo Mazo"
-    document.getElementById("btn-nuevo-mazo").addEventListener("click", () => {
-      const nuevoMazoDiv = document.getElementById("nuevo-mazo-fields");
-      nuevoMazoDiv.style.display = (nuevoMazoDiv.style.display === "none") ? "block" : "none";
+    // ----------------- NAVEGACIÓN ENTRE SECCIONES -----------------
+    document.getElementById('navAgregar').addEventListener('click', () => showSection('sectionAgregar'));
+    document.getElementById('navEstudiar').addEventListener('click', () => showSection('sectionEstudiar'));
+    document.getElementById('navRepaso').addEventListener('click', () => { 
+      showSection('sectionRepaso'); 
+      loadFilters(); 
     });
-
-    // Función para actualizar las opciones de temas según la asignatura seleccionada
-    function actualizarTemas(asignaturaSelectId, temaSelectId, mapping, multiple = false) {
-      const asignaturaSelect = document.getElementById(asignaturaSelectId);
-      const temaSelect = document.getElementById(temaSelectId);
-      temaSelect.innerHTML = "";
-      let asignaturas = [];
-      if (multiple) {
-        asignaturas = Array.from(asignaturaSelect.selectedOptions).map(opt => opt.value);
-      } else {
-        asignaturas = [asignaturaSelect.value];
-      }
-      let temasSet = new Set();
-      asignaturas.forEach(asignatura => {
-        if (mapping[asignatura]) {
-          mapping[asignatura].forEach(tema => temasSet.add(tema));
-        }
-      });
-      temasSet.forEach(tema => {
-        let option = document.createElement("option");
-        option.value = tema;
-        option.textContent = tema;
-        temaSelect.appendChild(option);
-      });
+    function showSection(sectionId){
+      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+      document.getElementById(sectionId).classList.add('active');
     }
-
-    // Cargar mazos existentes y construir el mapping (asignatura -> temas)
-    function cargarMazos() {
-      fetch(APPS_SCRIPT_URL + '?action=getMazos')
+    
+    // ----------------- CARGAR MAZOS (Asignaturas y Temas) -----------------
+    function loadMazos(){
+      fetch(SCRIPT_URL + '?action=getMazos')
         .then(response => response.json())
         .then(data => {
-          // Construir el mapping
-          mazoMapping = {};
-          data.forEach(mazo => {
-            if (!mazoMapping[mazo.asignatura]) {
-              mazoMapping[mazo.asignatura] = new Set();
-            }
-            mazoMapping[mazo.asignatura].add(mazo.tema);
-          });
-          // Sección Agregar
-          const selectAsignatura = document.getElementById("select-asignatura");
-          selectAsignatura.innerHTML = "";
-          for (let asignatura in mazoMapping) {
-            let option = document.createElement("option");
-            option.value = asignatura;
-            option.textContent = asignatura;
-            selectAsignatura.appendChild(option);
-          }
-          actualizarTemas("select-asignatura", "select-tema", mazoMapping);
-          // Sección Estudiar
-          const selectEstudioAsignatura = document.getElementById("select-estudio-asignatura");
-          selectEstudioAsignatura.innerHTML = "";
-          for (let asignatura in mazoMapping) {
-            let option = document.createElement("option");
-            option.value = asignatura;
-            option.textContent = asignatura;
-            selectEstudioAsignatura.appendChild(option);
-          }
-          actualizarTemas("select-estudio-asignatura", "select-estudio-tema", mazoMapping);
-          // Sección Repaso: Filtro asignatura (múltiple)
-          const filtroAsignatura = document.getElementById("filtro-asignatura");
-          filtroAsignatura.innerHTML = "";
-          for (let asignatura in mazoMapping) {
-            let option = document.createElement("option");
-            option.value = asignatura;
-            option.textContent = asignatura;
-            filtroAsignatura.appendChild(option);
-          }
-          actualizarTemas("filtro-asignatura", "filtro-tema", mazoMapping, true);
-
-          // Agregar event listeners para actualización dependiente
-          document.getElementById("select-asignatura").addEventListener("change", () => {
-            actualizarTemas("select-asignatura", "select-tema", mazoMapping);
-          });
-          document.getElementById("select-estudio-asignatura").addEventListener("change", () => {
-            actualizarTemas("select-estudio-asignatura", "select-estudio-tema", mazoMapping);
-          });
-          document.getElementById("filtro-asignatura").addEventListener("change", () => {
-            actualizarTemas("filtro-asignatura", "filtro-tema", mazoMapping, true);
-          });
+          populateSelect('selectAsignatura', data.asignaturas);
+          populateSelect('selectTema', data.temas);
+          populateSelect('selectEstudioAsignatura', data.asignaturas);
+          populateSelect('selectEstudioTema', data.temas);
+          populateSelect('filterAsignatura', data.asignaturas, true);
+          populateSelect('filterTema', data.temas, true);
         })
-        .catch(err => console.error("Error cargando mazos:", err));
+        .catch(err => console.error(err));
     }
-
-    // Función para Agregar Preguntas
-    document.getElementById("btn-agregar").addEventListener("click", () => {
-      const usmle = document.getElementById("usmle-checkbox").checked;
-      let asignatura = document.getElementById("select-asignatura").value;
-      let tema = document.getElementById("select-tema").value;
-      // Si se está creando un nuevo mazo:
-      if (document.getElementById("nuevo-mazo-fields").style.display === "block") {
-        asignatura = document.getElementById("nuevo-asignatura").value;
-        tema = document.getElementById("nuevo-tema").value;
+    function populateSelect(elementId, items, multiple = false){
+      const select = document.getElementById(elementId);
+      select.innerHTML = '';
+      if(!multiple){
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Seleccionar --';
+        select.appendChild(defaultOption);
       }
-      const entrada = document.getElementById("entrada-preguntas").value;
+      items.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = item;
+        select.appendChild(option);
+      });
+    }
+    
+    // ----------------- AGREGAR PREGUNTAS -----------------
+    document.getElementById('btnAgregar').addEventListener('click', () => {
+      const asignatura = document.getElementById('newAsignatura').value || document.getElementById('selectAsignatura').value;
+      const tema = document.getElementById('newTema').value || document.getElementById('selectTema').value;
+      const usmle = document.getElementById('checkUSMLE').checked ? 'Sí' : '';
+      const inputText = document.getElementById('inputPreguntas').value;
+      
+      if(!inputText.includes(',') || !inputText.includes(';')){
+        alert('Formato de entrada incorrecto.');
+        return;
+      }
+      
       const payload = {
+        action: 'agregarPreguntas',
         asignatura: asignatura,
         tema: tema,
         usmle: usmle,
-        entrada: entrada
+        preguntas: inputText
       };
-      fetch(APPS_SCRIPT_URL + '?action=addPreguntas', {
+      
+      fetch(SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors',
+        mode: 'cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-      .then(() => {
-        document.getElementById("mensaje-agregar").textContent = "Preguntas agregadas correctamente.";
-        cargarMazos();
-      })
-      .catch(err => {
-        document.getElementById("mensaje-agregar").textContent = "Error al agregar preguntas.";
-        console.error(err);
-      });
-    });
-
-    // Iniciar la sección de Estudio
-    document.getElementById("btn-iniciar-estudio").addEventListener("click", () => {
-      const asignatura = document.getElementById("select-estudio-asignatura").value;
-      const tema = document.getElementById("select-estudio-tema").value;
-      fetch(APPS_SCRIPT_URL + '?action=getPreguntas&asignatura=' + encodeURIComponent(asignatura) + '&tema=' + encodeURIComponent(tema))
       .then(response => response.json())
       .then(data => {
-        preguntasEstudio = data;
-        indiceActual = 0;
-        if (preguntasEstudio.length > 0) {
-          iniciarPantallaCompleta();
-          mostrarPregunta(indiceActual);
-          document.getElementById("contenedor-estudio").style.display = "block";
-        } else {
-          document.getElementById("mensaje-estudio").textContent = "No hay preguntas para este mazo.";
-        }
+        document.getElementById('agregarStatus').textContent = data.status;
+        loadMazos();
       })
-      .catch(err => console.error("Error cargando preguntas:", err));
+      .catch(err => console.error(err));
     });
-
-    // Forzar pantalla completa
-    function iniciarPantallaCompleta() {
-      const elem = document.documentElement;
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-      } else if (elem.mozRequestFullScreen) {
-        elem.mozRequestFullScreen();
-      } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-      } else if (elem.msRequestFullscreen) {
-        elem.msRequestFullscreen();
+    
+    // ----------------- ESTUDIAR PREGUNTAS -----------------
+    document.getElementById('btnIniciarEstudio').addEventListener('click', () => {
+      const asignatura = document.getElementById('selectEstudioAsignatura').value;
+      const tema = document.getElementById('selectEstudioTema').value;
+      if(!asignatura || !tema){
+        alert('Seleccione asignatura y tema.');
+        return;
       }
-    }
-
-    // Mostrar la pregunta en la sección de Estudio
-    function mostrarPregunta(index) {
-      const tarjeta = document.getElementById("tarjeta-estudio");
-      const preguntaObj = preguntasEstudio[index];
-      tarjeta.classList.remove("hidden");
-      tarjeta.classList.add("visible");
+      fetch(SCRIPT_URL + '?action=getPreguntas&asignatura=' + encodeURIComponent(asignatura) + '&tema=' + encodeURIComponent(tema))
+        .then(response => response.json())
+        .then(data => {
+          preguntasEstudio = data.preguntas;
+          indicePregunta = 0;
+          caraActual = 0;
+          showStudyCard();
+          document.getElementById('studyContainer').style.display = 'block';
+          // Aquí se podría forzar el modo pantalla completa sobre el área (simulado)
+        })
+        .catch(err => console.error(err));
+    });
+    function showStudyCard(){
+      if(preguntasEstudio.length === 0){
+        alert('No hay preguntas para este mazo.');
+        return;
+      }
+      const pregunta = preguntasEstudio[indicePregunta];
+      const faceQuestion = document.getElementById('faceQuestion');
+      const faceAnswer = document.getElementById('faceAnswer');
+      const faceExplanation = document.getElementById('faceExplanation');
       
-      if (preguntaObj["Test o Flashcard"] === "T") {
-        // Pregunta de tipo Test: separa opciones usando "/" y quita espacios extra.
-        const opciones = preguntaObj["Respuesta"].split("/").map(opt => opt.trim());
-        let html = "<h3>" + preguntaObj["Pregunta"] + "</h3>";
-        html += "<ul>";
-        opciones.forEach(opcion => {
-          html += `<li><button class="opcion-btn" data-respuesta="${opcion}">${opcion}</button></li>`;
-        });
-        html += "</ul>";
-        html += "<p class='explicacion' style='display:none;'>" + preguntaObj["Explicación"] + "</p>";
-        tarjeta.innerHTML = html;
-        document.querySelectorAll(".opcion-btn").forEach(btn => {
-          btn.addEventListener("click", function() {
-            // La primera opción es la correcta
-            if (btn.dataset.respuesta === opciones[0]) {
-              btn.style.backgroundColor = "lightgreen";
-            } else {
-              btn.style.backgroundColor = "lightcoral";
-            }
-            tarjeta.querySelector(".explicacion").style.display = "block";
-          });
-        });
+      if(pregunta.tipo === 'T'){
+        // Pregunta test: se muestran pregunta y opciones en una misma cara
+        let opciones = pregunta.opciones.split(' / ');
+        opciones = opciones.sort(() => Math.random() - 0.5);
+        faceQuestion.innerHTML = '<h3>' + pregunta.pregunta + '</h3><ul>' + opciones.map(opt => '<li class="option">' + opt + '</li>').join('') + '</ul>';
       } else {
-        // Pregunta de tipo Flashcard: se muestra la pregunta con un botón para alternar la respuesta.
-        let html = "<h3>" + preguntaObj["Pregunta"] + "</h3>";
-        html += "<p class='respuesta' style='display:none;'>" + preguntaObj["Respuesta"] + "</p>";
-        html += "<p class='explicacion' style='display:none;'>" + preguntaObj["Explicación"] + "</p>";
-        html += "<button class='btn-toggle'>Mostrar Respuesta</button>";
-        tarjeta.innerHTML = html;
-        tarjeta.querySelector('.btn-toggle').addEventListener("click", function() {
-          const respuestaEl = tarjeta.querySelector(".respuesta");
-          const explicacionEl = tarjeta.querySelector(".explicacion");
-          if (respuestaEl.style.display === "none") {
-            respuestaEl.style.display = "block";
-            explicacionEl.style.display = "block";
-            this.textContent = "Ocultar Respuesta";
-          } else {
-            respuestaEl.style.display = "none";
-            explicacionEl.style.display = "none";
-            this.textContent = "Mostrar Respuesta";
-          }
-        });
+        faceQuestion.innerHTML = '<h3>' + pregunta.pregunta + '</h3>';
       }
-      document.getElementById("contador-pregunta").textContent = (index + 1) + " / " + preguntasEstudio.length;
+      faceAnswer.innerHTML = '<p>' + pregunta.respuesta + '</p>';
+      faceExplanation.innerHTML = '<p>' + pregunta.explicacion + '</p>';
+      document.getElementById('cardInner').style.transform = 'rotateY(0deg)';
     }
-
-    // Botones de navegación en Estudio
-    document.getElementById("btn-siguiente").addEventListener("click", () => {
-      if (indiceActual < preguntasEstudio.length - 1) {
-        indiceActual++;
-        mostrarPregunta(indiceActual);
+    
+    // Navegación entre caras
+    document.getElementById('btnNextFace').addEventListener('click', () => {
+      caraActual = (caraActual + 1) % 3;
+      updateCardFace();
+    });
+    document.getElementById('btnPrevFace').addEventListener('click', () => {
+      caraActual = (caraActual + 2) % 3;
+      updateCardFace();
+    });
+    function updateCardFace(){
+      if(caraActual === 0){
+        document.getElementById('cardInner').style.transform = 'rotateY(0deg)';
+      } else if(caraActual === 1){
+        document.getElementById('cardInner').style.transform = 'rotateY(180deg)';
+      } else {
+        // Para la tercera cara (explicación) se puede mantener la misma rotación, ya que se muestran en otra sección
+        document.getElementById('cardInner').style.transform = 'rotateY(180deg)';
+      }
+    }
+    
+    document.getElementById('btnNextQuestion').addEventListener('click', () => {
+      if(indicePregunta < preguntasEstudio.length - 1){
+        indicePregunta++;
+        caraActual = 0;
+        showStudyCard();
       }
     });
-    document.getElementById("btn-anterior").addEventListener("click", () => {
-      if (indiceActual > 0) {
-        indiceActual--;
-        mostrarPregunta(indiceActual);
+    document.getElementById('btnPrevQuestion').addEventListener('click', () => {
+      if(indicePregunta > 0){
+        indicePregunta--;
+        caraActual = 0;
+        showStudyCard();
       }
     });
-
-    // Actualizar dificultad (envío inmediato)
-    document.querySelectorAll(".btn-dificultad").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const dificultad = btn.dataset.dificultad;
-        const preguntaObj = preguntasEstudio[indiceActual];
-        const payload = {
-          asignatura: preguntaObj["Asignatura"],
-          tema: preguntaObj["Tema"],
-          id: preguntaObj["id#"],
-          dificultad: dificultad
-        };
-        fetch(APPS_SCRIPT_URL + '?action=updateDificultad', {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-        .then(() => {
-          alert("Dificultad actualizada a " + dificultad);
-        })
-        .catch(err => console.error("Error actualizando dificultad:", err));
+    
+    // Actualización de dificultad
+    document.querySelectorAll('.btnDificultad').forEach(btn => {
+      btn.addEventListener('click', function(){
+        const dificultad = this.getAttribute('data-dificultad');
+        actualizarDificultad(preguntasEstudio[indicePregunta].id, dificultad);
       });
     });
-
-    // Sección Repaso: Iniciar sesión de repaso
-    document.getElementById("btn-iniciar-repaso").addEventListener("click", () => {
-      const filtroAsignaturas = Array.from(document.getElementById("filtro-asignatura").selectedOptions).map(opt => opt.value);
-      const filtroTemas = Array.from(document.getElementById("filtro-tema").selectedOptions).map(opt => opt.value);
-      const filtroDificultad = document.getElementById("filtro-dificultad").value;
-      const filtroUsmle = document.getElementById("filtro-usmle").checked;
-      const timerVal = parseInt(document.getElementById("filtro-timer").value, 10);
-      const programarSesion = document.getElementById("programar-sesion").value;
-      let query = `action=getPreguntas&`;
-      if (filtroAsignaturas.length > 0) {
-        query += "asignatura=" + encodeURIComponent(filtroAsignaturas.join(",")) + "&";
-      }
-      if (filtroTemas.length > 0) {
-        query += "tema=" + encodeURIComponent(filtroTemas.join(",")) + "&";
-      }
-      if (filtroDificultad) {
-        query += "dificultad=" + encodeURIComponent(filtroDificultad) + "&";
-      }
-      if (filtroUsmle) {
-        query += "usmle=true&";
-      }
-      if (programarSesion) {
-        query += "programar=" + encodeURIComponent(programarSesion) + "&";
-      }
-      fetch(APPS_SCRIPT_URL + '?' + query)
-      .then(response => response.json())
-      .then(data => {
-        const repasoContenedor = document.getElementById("contenedor-repaso");
-        repasoContenedor.style.display = "block";
-        const repasoLista = document.getElementById("repaso-lista");
-        repasoLista.innerHTML = "";
-        data.forEach(preg => {
-          repasoLista.innerHTML += `<div class="tarjeta"><h3>${preg.Pregunta}</h3><p>${preg.Respuesta}</p><p>${preg.Explicación}</p></div>`;
-        });
-        if (timerVal > 0) {
-          iniciarTimer(timerVal);
-        }
-        if (filtroUsmle) {
-          document.getElementById("calificacion-usmle").textContent = "Calificación: 85%";
-        }
+    function actualizarDificultad(id, dificultad){
+      const payload = {
+        action: 'actualizarDificultad',
+        id: id,
+        dificultad: dificultad
+      };
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       })
-      .catch(err => console.error("Error en repaso:", err));
-    });
-
-    // Función de Timer
-    function iniciarTimer(segundos) {
-      const display = document.getElementById("timer-display");
-      let remaining = segundos;
-      display.textContent = "Tiempo: " + remaining + "s";
-      const interval = setInterval(() => {
-        remaining--;
-        display.textContent = "Tiempo: " + remaining + "s";
-        if (remaining <= 0) {
-          clearInterval(interval);
-          display.textContent = "Tiempo terminado.";
-        }
-      }, 1000);
+      .then(response => response.json())
+      .then(data => { console.log('Dificultad actualizada'); })
+      .catch(err => console.error(err));
     }
-
-    // Inicialización
-    cargarMazos();
+    
+    // Toggle día/noche y salir del estudio
+    document.getElementById('btnToggleDayNight').addEventListener('click', () => {
+      document.getElementById('studyArea').classList.toggle('dark-mode');
+    });
+    document.getElementById('btnSalirEstudio').addEventListener('click', () => {
+      document.getElementById('studyContainer').style.display = 'none';
+    });
+    
+    // ----------------- SECCIÓN REPASO -----------------
+    function loadFilters(){
+      // Opcionalmente, se pueden recargar los selectores de filtros si han cambiado
+      loadMazos();
+    }
+    
+    document.getElementById('modoRepaso').addEventListener('change', function(){
+      document.getElementById('calendar').style.display = (this.value === 'programado') ? 'block' : 'none';
+    });
+    
+    document.getElementById('btnProgramarRepaso').addEventListener('click', () => {
+      alert('Repaso programado para: ' + document.getElementById('repasoFecha').value);
+      // Aquí se podría enviar la programación al backend y actualizar un calendario visual
+    });
+    
+    document.getElementById('btnIniciarRepaso').addEventListener('click', () => {
+      const asignaturas = Array.from(document.getElementById('filterAsignatura').selectedOptions).map(o => o.value);
+      const temas = Array.from(document.getElementById('filterTema').selectedOptions).map(o => o.value);
+      const dificultad = document.getElementById('filterDificultad').value;
+      const usmle = document.getElementById('filterUSMLE').checked ? 'Sí' : '';
+      let query = '?action=getPreguntas&';
+      if(asignaturas.length > 0) query += 'asignaturas=' + encodeURIComponent(asignaturas.join(',')) + '&';
+      if(temas.length > 0) query += 'temas=' + encodeURIComponent(temas.join(',')) + '&';
+      if(dificultad) query += 'dificultad=' + encodeURIComponent(dificultad) + '&';
+      if(usmle) query += 'usmle=' + encodeURIComponent(usmle) + '&';
+      
+      fetch(SCRIPT_URL + query)
+        .then(response => response.json())
+        .then(data => {
+          preguntasEstudio = data.preguntas;
+          indicePregunta = 0;
+          caraActual = 0;
+          showStudyCard();
+          document.getElementById('repasoContainer').style.display = 'block';
+          if(usmle){
+            document.getElementById('repasoInfo').textContent = 'Calificación: 85% - Preguntas USMLE: ' + preguntasEstudio.length;
+          }
+        })
+        .catch(err => console.error(err));
+    });
+    
+    // Toggle día/noche en repaso y salir
+    document.getElementById('btnToggleDayNightRepaso').addEventListener('click', () => {
+      document.getElementById('studyAreaRepaso').classList.toggle('dark-mode');
+    });
+    document.getElementById('btnSalirRepaso').addEventListener('click', () => {
+      document.getElementById('repasoContainer').style.display = 'none';
+    });
+    
+    // Cargar mazos al iniciar
+    loadMazos();
   </script>
 </body>
 </html>
