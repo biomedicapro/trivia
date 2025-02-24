@@ -138,7 +138,9 @@
       </div>
       <div class="form-group">
         <label>Entrada de Grupo de Preguntas (Formato mixto)</label>
-        <textarea id="entrada-preguntas" placeholder='Ej: "pregunta1", "respuesta1", "explicación1", "F"; "pregunta2", "respuesta2", "explicación2", "F"; "pregunta3", "[opción correcta] [opción 2] [opción 3] [opción 4]", "explicación3", "T";'></textarea>
+        <textarea id="entrada-preguntas" placeholder='Ejemplos:
+Flashcards: pregunta1, respuesta1, explicación1, F; pregunta2, respuesta2, explicación2, F;
+Test: pregunta3, opción1 / opción2 / opción3 / opción4, explicación3, T; pregunta4, opción1 / opción2 / opción3 / opción4, explicación4, T;'></textarea>
       </div>
       <div class="form-group">
         <button id="btn-agregar">Agregar Preguntas</button>
@@ -221,11 +223,12 @@
 
   <script>
     // URL del Apps Script (reemplaza YOUR_SCRIPT_ID)
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4AS20oq8t4-TlVjBtm845wvrcDAq_iXP7ALXRMhzleUPJ502gcd3k6n4cepzNLLU/exec';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfJuthQcueVpRkPhnGFhwek0yUVLLdbGp5LjjzeW4X2Eu3Z3Tk1ttb2QOBftGec5LI/exec';
 
-    // Variables globales para la sección de estudio
+    // Variables globales para la sección de estudio y mapeo de mazos
     let preguntasEstudio = [];
     let indiceActual = 0;
+    let mazoMapping = {}; // Objeto: asignatura -> Set(temas)
 
     // Navegación entre secciones
     document.getElementById("nav-agregar").addEventListener("click", () => showSection("seccion-agregar"));
@@ -236,7 +239,6 @@
       document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
       document.getElementById(sectionId).classList.add("active");
       document.querySelectorAll("nav button").forEach(btn => btn.classList.remove("active"));
-      // Asumimos que el id del botón se forma a partir de "nav-" + la segunda parte del id de la sección
       document.getElementById("nav-" + sectionId.split('-')[1]).classList.add("active");
     }
 
@@ -246,51 +248,84 @@
       nuevoMazoDiv.style.display = (nuevoMazoDiv.style.display === "none") ? "block" : "none";
     });
 
-    // Cargar mazos existentes para las secciones Agregar, Estudiar y Repaso
+    // Función para actualizar las opciones de temas según la asignatura seleccionada
+    function actualizarTemas(asignaturaSelectId, temaSelectId, mapping, multiple = false) {
+      const asignaturaSelect = document.getElementById(asignaturaSelectId);
+      const temaSelect = document.getElementById(temaSelectId);
+      temaSelect.innerHTML = "";
+      let asignaturas = [];
+      if (multiple) {
+        asignaturas = Array.from(asignaturaSelect.selectedOptions).map(opt => opt.value);
+      } else {
+        asignaturas = [asignaturaSelect.value];
+      }
+      let temasSet = new Set();
+      asignaturas.forEach(asignatura => {
+        if (mapping[asignatura]) {
+          mapping[asignatura].forEach(tema => temasSet.add(tema));
+        }
+      });
+      temasSet.forEach(tema => {
+        let option = document.createElement("option");
+        option.value = tema;
+        option.textContent = tema;
+        temaSelect.appendChild(option);
+      });
+    }
+
+    // Cargar mazos existentes y construir el mapping (asignatura -> temas)
     function cargarMazos() {
       fetch(APPS_SCRIPT_URL + '?action=getMazos')
         .then(response => response.json())
         .then(data => {
-          const selectAsignatura = document.getElementById("select-asignatura");
-          const selectTema = document.getElementById("select-tema");
-          const selectEstudioAsignatura = document.getElementById("select-estudio-asignatura");
-          const selectEstudioTema = document.getElementById("select-estudio-tema");
-          const filtroAsignatura = document.getElementById("filtro-asignatura");
-          const filtroTema = document.getElementById("filtro-tema");
-          // Limpiar contenido de selectores
-          selectAsignatura.innerHTML = "";
-          selectTema.innerHTML = "";
-          selectEstudioAsignatura.innerHTML = "";
-          selectEstudioTema.innerHTML = "";
-          filtroAsignatura.innerHTML = "";
-          filtroTema.innerHTML = "";
+          // Construir el mapping
+          mazoMapping = {};
           data.forEach(mazo => {
-            // Para mazos existentes: asignatura y tema
-            let op1 = document.createElement("option");
-            op1.value = mazo.asignatura;
-            op1.textContent = mazo.asignatura;
-            selectAsignatura.appendChild(op1);
-            let op2 = document.createElement("option");
-            op2.value = mazo.tema;
-            op2.textContent = mazo.tema;
-            selectTema.appendChild(op2);
-            let op3 = document.createElement("option");
-            op3.value = mazo.asignatura;
-            op3.textContent = mazo.asignatura;
-            selectEstudioAsignatura.appendChild(op3);
-            let op4 = document.createElement("option");
-            op4.value = mazo.tema;
-            op4.textContent = mazo.tema;
-            selectEstudioTema.appendChild(op4);
-            // Para filtros múltiples
-            let fOp1 = document.createElement("option");
-            fOp1.value = mazo.asignatura;
-            fOp1.textContent = mazo.asignatura;
-            filtroAsignatura.appendChild(fOp1);
-            let fOp2 = document.createElement("option");
-            fOp2.value = mazo.tema;
-            fOp2.textContent = mazo.tema;
-            filtroTema.appendChild(fOp2);
+            if (!mazoMapping[mazo.asignatura]) {
+              mazoMapping[mazo.asignatura] = new Set();
+            }
+            mazoMapping[mazo.asignatura].add(mazo.tema);
+          });
+          // Sección Agregar
+          const selectAsignatura = document.getElementById("select-asignatura");
+          selectAsignatura.innerHTML = "";
+          for (let asignatura in mazoMapping) {
+            let option = document.createElement("option");
+            option.value = asignatura;
+            option.textContent = asignatura;
+            selectAsignatura.appendChild(option);
+          }
+          actualizarTemas("select-asignatura", "select-tema", mazoMapping);
+          // Sección Estudiar
+          const selectEstudioAsignatura = document.getElementById("select-estudio-asignatura");
+          selectEstudioAsignatura.innerHTML = "";
+          for (let asignatura in mazoMapping) {
+            let option = document.createElement("option");
+            option.value = asignatura;
+            option.textContent = asignatura;
+            selectEstudioAsignatura.appendChild(option);
+          }
+          actualizarTemas("select-estudio-asignatura", "select-estudio-tema", mazoMapping);
+          // Sección Repaso: Filtro asignatura (múltiple)
+          const filtroAsignatura = document.getElementById("filtro-asignatura");
+          filtroAsignatura.innerHTML = "";
+          for (let asignatura in mazoMapping) {
+            let option = document.createElement("option");
+            option.value = asignatura;
+            option.textContent = asignatura;
+            filtroAsignatura.appendChild(option);
+          }
+          actualizarTemas("filtro-asignatura", "filtro-tema", mazoMapping, true);
+
+          // Agregar event listeners para actualización dependiente
+          document.getElementById("select-asignatura").addEventListener("change", () => {
+            actualizarTemas("select-asignatura", "select-tema", mazoMapping);
+          });
+          document.getElementById("select-estudio-asignatura").addEventListener("change", () => {
+            actualizarTemas("select-estudio-asignatura", "select-estudio-tema", mazoMapping);
+          });
+          document.getElementById("filtro-asignatura").addEventListener("change", () => {
+            actualizarTemas("filtro-asignatura", "filtro-tema", mazoMapping, true);
           });
         })
         .catch(err => console.error("Error cargando mazos:", err));
@@ -301,8 +336,8 @@
       const usmle = document.getElementById("usmle-checkbox").checked;
       let asignatura = document.getElementById("select-asignatura").value;
       let tema = document.getElementById("select-tema").value;
-      // Si se está creando un nuevo mazo
-      if(document.getElementById("nuevo-mazo-fields").style.display === "block"){
+      // Si se está creando un nuevo mazo:
+      if (document.getElementById("nuevo-mazo-fields").style.display === "block") {
         asignatura = document.getElementById("nuevo-asignatura").value;
         tema = document.getElementById("nuevo-tema").value;
       }
@@ -316,9 +351,7 @@
       fetch(APPS_SCRIPT_URL + '?action=addPreguntas', {
         method: 'POST',
         mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
       .then(() => {
@@ -340,7 +373,7 @@
       .then(data => {
         preguntasEstudio = data;
         indiceActual = 0;
-        if(preguntasEstudio.length > 0){
+        if (preguntasEstudio.length > 0) {
           iniciarPantallaCompleta();
           mostrarPregunta(indiceActual);
           document.getElementById("contenedor-estudio").style.display = "block";
@@ -352,9 +385,9 @@
     });
 
     // Forzar pantalla completa
-    function iniciarPantallaCompleta(){
+    function iniciarPantallaCompleta() {
       const elem = document.documentElement;
-      if(elem.requestFullscreen) {
+      if (elem.requestFullscreen) {
         elem.requestFullscreen();
       } else if (elem.mozRequestFullScreen) {
         elem.mozRequestFullScreen();
@@ -366,63 +399,67 @@
     }
 
     // Mostrar la pregunta en la sección de Estudio
-    function mostrarPregunta(index){
+    function mostrarPregunta(index) {
       const tarjeta = document.getElementById("tarjeta-estudio");
       const preguntaObj = preguntasEstudio[index];
       tarjeta.classList.remove("hidden");
       tarjeta.classList.add("visible");
-      if(preguntaObj["Test o Flashcard"] === "T"){
-        // Pregunta de tipo Test
-        const opciones = preguntaObj["Respuesta"].split(" ");
-        const opcionesAleatorias = opciones.sort(() => Math.random() - 0.5);
+      
+      if (preguntaObj["Test o Flashcard"] === "T") {
+        // Pregunta de tipo Test: separa opciones usando "/" y quita espacios extra.
+        const opciones = preguntaObj["Respuesta"].split("/").map(opt => opt.trim());
         let html = "<h3>" + preguntaObj["Pregunta"] + "</h3>";
         html += "<ul>";
-        opcionesAleatorias.forEach(opcion => {
+        opciones.forEach(opcion => {
           html += `<li><button class="opcion-btn" data-respuesta="${opcion}">${opcion}</button></li>`;
         });
         html += "</ul>";
         html += "<p class='explicacion' style='display:none;'>" + preguntaObj["Explicación"] + "</p>";
         tarjeta.innerHTML = html;
         document.querySelectorAll(".opcion-btn").forEach(btn => {
-          btn.addEventListener("click", function(){
-            if(btn.dataset.respuesta === preguntaObj["Respuesta"].split(" ")[0]){
+          btn.addEventListener("click", function() {
+            // La primera opción es la correcta
+            if (btn.dataset.respuesta === opciones[0]) {
               btn.style.backgroundColor = "lightgreen";
             } else {
               btn.style.backgroundColor = "lightcoral";
             }
-            document.querySelector(".explicacion").style.display = "block";
+            tarjeta.querySelector(".explicacion").style.display = "block";
           });
         });
       } else {
-        // Pregunta de tipo Flashcard
+        // Pregunta de tipo Flashcard: se muestra la pregunta con un botón para alternar la respuesta.
         let html = "<h3>" + preguntaObj["Pregunta"] + "</h3>";
         html += "<p class='respuesta' style='display:none;'>" + preguntaObj["Respuesta"] + "</p>";
         html += "<p class='explicacion' style='display:none;'>" + preguntaObj["Explicación"] + "</p>";
+        html += "<button class='btn-toggle'>Mostrar Respuesta</button>";
         tarjeta.innerHTML = html;
-        tarjeta.addEventListener("click", function(){
+        tarjeta.querySelector('.btn-toggle').addEventListener("click", function() {
           const respuestaEl = tarjeta.querySelector(".respuesta");
           const explicacionEl = tarjeta.querySelector(".explicacion");
-          if(respuestaEl.style.display === "none"){
+          if (respuestaEl.style.display === "none") {
             respuestaEl.style.display = "block";
             explicacionEl.style.display = "block";
+            this.textContent = "Ocultar Respuesta";
           } else {
             respuestaEl.style.display = "none";
             explicacionEl.style.display = "none";
+            this.textContent = "Mostrar Respuesta";
           }
         });
       }
-      document.getElementById("contador-pregunta").textContent = (index+1) + " / " + preguntasEstudio.length;
+      document.getElementById("contador-pregunta").textContent = (index + 1) + " / " + preguntasEstudio.length;
     }
 
     // Botones de navegación en Estudio
     document.getElementById("btn-siguiente").addEventListener("click", () => {
-      if(indiceActual < preguntasEstudio.length - 1){
+      if (indiceActual < preguntasEstudio.length - 1) {
         indiceActual++;
         mostrarPregunta(indiceActual);
       }
     });
     document.getElementById("btn-anterior").addEventListener("click", () => {
-      if(indiceActual > 0){
+      if (indiceActual > 0) {
         indiceActual--;
         mostrarPregunta(indiceActual);
       }
@@ -442,9 +479,7 @@
         fetch(APPS_SCRIPT_URL + '?action=updateDificultad', {
           method: 'POST',
           mode: 'no-cors',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         })
         .then(() => {
@@ -463,19 +498,19 @@
       const timerVal = parseInt(document.getElementById("filtro-timer").value, 10);
       const programarSesion = document.getElementById("programar-sesion").value;
       let query = `action=getPreguntas&`;
-      if(filtroAsignaturas.length > 0){
+      if (filtroAsignaturas.length > 0) {
         query += "asignatura=" + encodeURIComponent(filtroAsignaturas.join(",")) + "&";
       }
-      if(filtroTemas.length > 0){
+      if (filtroTemas.length > 0) {
         query += "tema=" + encodeURIComponent(filtroTemas.join(",")) + "&";
       }
-      if(filtroDificultad){
+      if (filtroDificultad) {
         query += "dificultad=" + encodeURIComponent(filtroDificultad) + "&";
       }
-      if(filtroUsmle){
+      if (filtroUsmle) {
         query += "usmle=true&";
       }
-      if(programarSesion){
+      if (programarSesion) {
         query += "programar=" + encodeURIComponent(programarSesion) + "&";
       }
       fetch(APPS_SCRIPT_URL + '?' + query)
@@ -488,10 +523,10 @@
         data.forEach(preg => {
           repasoLista.innerHTML += `<div class="tarjeta"><h3>${preg.Pregunta}</h3><p>${preg.Respuesta}</p><p>${preg.Explicación}</p></div>`;
         });
-        if(timerVal > 0){
+        if (timerVal > 0) {
           iniciarTimer(timerVal);
         }
-        if(filtroUsmle){
+        if (filtroUsmle) {
           document.getElementById("calificacion-usmle").textContent = "Calificación: 85%";
         }
       })
@@ -499,14 +534,14 @@
     });
 
     // Función de Timer
-    function iniciarTimer(segundos){
+    function iniciarTimer(segundos) {
       const display = document.getElementById("timer-display");
       let remaining = segundos;
       display.textContent = "Tiempo: " + remaining + "s";
       const interval = setInterval(() => {
         remaining--;
         display.textContent = "Tiempo: " + remaining + "s";
-        if(remaining <= 0){
+        if (remaining <= 0) {
           clearInterval(interval);
           display.textContent = "Tiempo terminado.";
         }
