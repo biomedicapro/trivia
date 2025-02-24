@@ -50,7 +50,7 @@
       display: block;
       margin-bottom: 0.5em;
     }
-    select, input[type="text"], textarea {
+    select, input[type="text"], textarea, input[type="datetime-local"], input[type="number"] {
       width: 100%;
       padding: 0.5em;
       font-size: 1em;
@@ -196,7 +196,7 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
         <select id="selectEstudioTema"></select>
       </div>
       <button id="btnIniciarEstudio" class="btn">Iniciar Estudio</button>
-      <!-- Área de estudio (pantalla completa para el área de la pregunta) -->
+      <!-- Área de estudio (se forzará pantalla completa en el área de la pregunta) -->
       <div id="studyArea" style="display:none;">
         <div id="sidePanel">
           <button id="btnToggleMode" title="Día/Noche">🌙</button>
@@ -255,9 +255,8 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
         <input type="number" id="repasoTimer" value="10">
       </div>
       <button id="btnIniciarRepaso" class="btn">Iniciar Repaso</button>
-      <!-- Área de repaso: utiliza la misma interfaz de estudio -->
+      <!-- Área de repaso: se reutiliza la interfaz de estudio -->
       <div id="repasoArea" style="display:none;">
-        <!-- Se reutiliza el #studyArea y sus controles -->
         <div id="studyAreaRepaso"></div>
         <div id="repasoCalificacion"></div>
       </div>
@@ -268,15 +267,14 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
     /***********************
      * Variables Globales  *
      ***********************/
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwPRB8qSA106UQEtUjkapY-q5Wtc52-fdNXk3R_JxrYo5FD5JMW1aAKsbhIomk44zw6/exec'; // Reemplazar por la URL de tu Apps Script
-    let mazos = []; // Se llenará con asignaturas y temas existentes
-    let preguntas = []; // Array de preguntas cargadas para estudio/repaso
-    let indicePregunta = 0; // Índice actual en la sesión de estudio/repaso
-    let modoRepasoProgramado = false;
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx832rUgB6C-Tor1J-bjKBHG52hwWjfv3Bo--VC62vBsZsemdbU4Wt6YAZluY3WfMTT/exec'; // Reemplaza con tu URL
+    let mazos = []; // Conjunto de asignaturas y temas existentes
+    let preguntas = []; // Preguntas cargadas para estudio/repaso
+    let indicePregunta = 0; // Índice de la pregunta actual
     let timerID = null;
     
     /***********************
-     * Utilidades          *
+     * Funciones Utilitarias *
      ***********************/
     function mostrarMensaje(selector, mensaje, esError = false) {
       const elem = document.querySelector(selector);
@@ -285,7 +283,7 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
       setTimeout(() => { elem.textContent = ''; }, 3000);
     }
     
-    // Solicita al backend los mazos (asignaturas y temas)
+    // Cargar mazos (asignaturas y temas) desde el Apps Script
     async function cargarMazos() {
       try {
         const res = await fetch(APPS_SCRIPT_URL + '?action=getMazos');
@@ -298,7 +296,7 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
     }
     
     function poblarSelectores() {
-      // Para sección Agregar y Estudiar, y para filtros en Repaso
+      // Selectores para Agregar, Estudiar y filtros en Repaso
       const selectAsignatura = document.getElementById('selectAsignatura');
       const selectTema = document.getElementById('selectTema');
       const selectEstudioAsignatura = document.getElementById('selectEstudioAsignatura');
@@ -306,12 +304,12 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
       const filtroAsignatura = document.getElementById('filtroAsignatura');
       const filtroTema = document.getElementById('filtroTema');
       
-      // Limpiar
+      // Limpiar selectores
       selectAsignatura.innerHTML = '';
       selectEstudioAsignatura.innerHTML = '';
       filtroAsignatura.innerHTML = '';
       
-      // Agrupar por asignatura
+      // Agrupar mazos por asignatura
       const asignaturas = {};
       mazos.forEach(m => {
         if (!asignaturas[m.asignatura]) asignaturas[m.asignatura] = new Set();
@@ -325,17 +323,18 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
         selectAsignatura.appendChild(option);
         selectEstudioAsignatura.appendChild(option.cloneNode(true));
         
-        // Para filtros con opción múltiple
+        // Para filtros múltiples
         const optFiltro = document.createElement('option');
         optFiltro.value = asignatura;
         optFiltro.textContent = asignatura;
         filtroAsignatura.appendChild(optFiltro);
       }
       
-      // Para el selector de tema en Agregar
+      // Actualizar selector de temas
       actualizarSelectTema(selectAsignatura.value, selectTema);
       actualizarSelectTema(selectEstudioAsignatura.value, selectEstudioTema);
-      // Para el filtro de temas: se agregan todos los temas de cada asignatura
+      
+      // Llenar filtro de temas con todos los temas
       filtroTema.innerHTML = '';
       for (const asignatura in asignaturas) {
         asignaturas[asignatura].forEach(tema => {
@@ -359,9 +358,8 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
     }
     
     /***********************
-     * Eventos y Navegación *
+     * Eventos de Navegación *
      ***********************/
-    // Cambio de pestañas
     document.getElementById('tabAgregar').addEventListener('click', () => mostrarSeccion('agregarSection'));
     document.getElementById('tabEstudiar').addEventListener('click', () => mostrarSeccion('estudiarSection'));
     document.getElementById('tabRepaso').addEventListener('click', () => mostrarSeccion('repasoSection'));
@@ -375,7 +373,6 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
      * Agregar Preguntas   *
      ***********************/
     document.getElementById('btnAgregar').addEventListener('click', async () => {
-      // Recoger datos de selección y entrada
       const asignaturaExistente = document.getElementById('selectAsignatura').value;
       const temaExistente = document.getElementById('selectTema').value;
       const nuevaAsignatura = document.getElementById('nuevaAsignatura').value.trim();
@@ -383,7 +380,7 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
       const usmle = document.getElementById('usmleCheckbox').checked;
       const texto = document.getElementById('textoPreguntas').value.trim();
       
-      // Definir asignatura y tema a usar (priorizar nuevos si existen)
+      // Priorizar nuevos datos si existen
       const asignatura = nuevaAsignatura || asignaturaExistente;
       const tema = nuevoTema || temaExistente;
       
@@ -392,7 +389,6 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
         return;
       }
       
-      // Enviar datos al Apps Script
       try {
         const res = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
@@ -408,7 +404,6 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
         const result = await res.json();
         if (result.status === 'success') {
           mostrarMensaje('#agregarMensaje', 'Preguntas agregadas correctamente.');
-          // Recargar mazos para actualizar selectores
           cargarMazos();
         } else {
           mostrarMensaje('#agregarMensaje', result.message, true);
@@ -425,7 +420,6 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
     document.getElementById('btnIniciarEstudio').addEventListener('click', async () => {
       const asignatura = document.getElementById('selectEstudioAsignatura').value;
       const tema = document.getElementById('selectEstudioTema').value;
-      // Cargar preguntas filtradas según asignatura y tema
       try {
         const res = await fetch(APPS_SCRIPT_URL + '?action=getQuestions&asignatura=' + encodeURIComponent(asignatura) + '&tema=' + encodeURIComponent(tema));
         const data = await res.json();
@@ -438,7 +432,6 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
     });
     
     function iniciarEstudio() {
-      // Mostrar el área de estudio y forzar pantalla completa en ese contenedor
       const studyArea = document.getElementById('studyArea');
       studyArea.style.display = 'block';
       if (studyArea.requestFullscreen) {
@@ -450,33 +443,29 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
     function mostrarPregunta(indice) {
       if (indice < 0 || indice >= preguntas.length) return;
       const pregunta = preguntas[indice];
-      // Configurar las 3 caras:
-      // Cara 1: Pregunta (para test: incluye opciones en orden aleatorio)
       let face1 = '';
       if (pregunta.tipo === 'T') {
-        // Separar pregunta y opciones
+        // Para preguntas tipo test: separar pregunta y opciones (asumiendo formato: "pregunta, opción1 / opción2 / opción3 / opción4")
         const partes = pregunta.pregunta.split(',');
-        // Asumir que la parte de las opciones tiene el formato: "pregunta, opción1 / opción2 / opción3 / opción4"
-        // Separamos la cadena de opciones por '/' y aleatorizamos
-        const opciones = partes[1].split('/').map(o => o.trim());
-        const preguntaTexto = partes[0];
-        // Aleatorizar opciones
-        opciones.sort(() => Math.random() - 0.5);
+        const preguntaTexto = partes[0].trim();
+        let opciones = [];
+        if (partes.length > 1) {
+          opciones = partes[1].split('/').map(op => op.trim());
+          opciones.sort(() => Math.random() - 0.5);
+        }
         face1 = `<div>${preguntaTexto}</div>`;
         opciones.forEach(opcion => {
           face1 += `<button class="opcionBtn">${opcion}</button>`;
         });
       } else {
-        // Flashcard: solo muestra la pregunta
+        // Para flashcards, solo se muestra la pregunta
         face1 = `<div>${pregunta.pregunta}</div>`;
       }
       document.getElementById('cardFace1').innerHTML = face1;
-      // Cara 2: Respuesta
       document.getElementById('cardFace2').innerHTML = `<div>${pregunta.respuesta}</div>`;
-      // Cara 3: Explicación
       document.getElementById('cardFace3').innerHTML = `<div>${pregunta.explicacion}</div>`;
       
-      // Reiniciar visibilidad: mostrar solo la cara 1
+      // Mostrar inicialmente solo la cara 1
       document.getElementById('cardFace1').style.display = 'flex';
       document.getElementById('cardFace2').style.display = 'none';
       document.getElementById('cardFace3').style.display = 'none';
@@ -484,7 +473,6 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
     
     // Botón para pasar entre caras
     document.getElementById('btnFlip').addEventListener('click', () => {
-      // Alterna entre mostrar respuesta y explicación
       const face1 = document.getElementById('cardFace1');
       const face2 = document.getElementById('cardFace2');
       const face3 = document.getElementById('cardFace3');
@@ -495,7 +483,6 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
         face2.style.display = 'none';
         face3.style.display = 'flex';
       } else {
-        // Vuelve a la cara 1
         face3.style.display = 'none';
         face1.style.display = 'flex';
       }
@@ -528,7 +515,7 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
       document.getElementById('studyArea').style.display = 'none';
     });
     
-    // Actualizar dificultad (feedback inmediato)
+    // Actualizar dificultad
     document.querySelectorAll('.btnDificultad').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const dificultad = e.currentTarget.getAttribute('data-dificultad');
@@ -558,28 +545,20 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
     /***********************
      * Sección Repaso      *
      ***********************/
-    // Modo Repasar Inmediato
     document.getElementById('btnRepasarInmediato').addEventListener('click', iniciarRepaso);
-    
-    // Mostrar calendario si se programa repaso
     document.getElementById('btnProgramarRepaso').addEventListener('click', () => {
       document.getElementById('calendarContainer').style.display = 'block';
     });
-    
-    // Iniciar repaso (ya sea inmediato o programado)
     document.getElementById('btnIniciarRepaso').addEventListener('click', iniciarRepaso);
     
     async function iniciarRepaso() {
-      // Recolectar filtros
       const asignaturas = Array.from(document.getElementById('filtroAsignatura').selectedOptions).map(o => o.value);
       const temas = Array.from(document.getElementById('filtroTema').selectedOptions).map(o => o.value);
       const dificultad = document.getElementById('filtroDificultad').value;
       const usmle = document.getElementById('filtroUSMLE').checked;
       const timerMin = parseInt(document.getElementById('repasoTimer').value, 10);
-      // Si hay calendario y se programó, se podría enviar la fecha
       const repasoFecha = document.getElementById('repasoFecha').value;
       
-      // Solicitar preguntas con filtros al Apps Script
       const params = new URLSearchParams({
         action: 'getQuestions',
         asignaturas: asignaturas.join(','),
@@ -592,21 +571,18 @@ Test: pregunta3, opción correcta / opción 2 / opción 3 / opción 4, explicaci
         const data = await res.json();
         preguntas = data.preguntas;
         indicePregunta = 0;
-        // Iniciar la interfaz de repaso (usando la misma interfaz de estudio)
         document.getElementById('studyArea').style.display = 'block';
         if (document.getElementById('studyArea').requestFullscreen) {
           document.getElementById('studyArea').requestFullscreen();
         }
         mostrarPregunta(indicePregunta);
-        // Iniciar timer
         if (timerMin > 0) {
           if (timerID) clearTimeout(timerID);
           timerID = setTimeout(() => {
             alert('¡El tiempo del repaso ha finalizado!');
           }, timerMin * 60000);
         }
-        // Si se trata de repaso USMLE, mostrar calificación al finalizar (este ejemplo se dejará para cuando se cierre la sesión)
-        // Se podría actualizar el DOM de repaso con la calificación y el total de preguntas.
+        // En repaso USMLE se podría actualizar la calificación y número total de preguntas en el DOM
       } catch (err) {
         console.error(err);
       }
