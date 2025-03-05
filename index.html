@@ -2,239 +2,262 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestor de Preguntas</title>
+  <title>Gestor de Preguntas - Estilo Windows Explorer</title>
   <style>
-    /* Reset y maximización de pantalla */
-    html, body {
+    /* Reset */
+    * {
       margin: 0;
       padding: 0;
-      height: 100%;
-      width: 100%;
-      background-color: #fff;
-      color: #000;
-      font-family: sans-serif;
-    }
-    /* Cada "página" ocupa toda la pantalla */
-    .page {
-      display: none;
-      height: 100%;
-      width: 100%;
       box-sizing: border-box;
     }
-    .active {
-      display: block;
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #ffffff;
+      color: #111;
+      line-height: 1.6;
     }
     header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      background-color: #111;
+      color: #fff;
+      padding: 15px 20px;
+      text-align: center;
+      font-size: 1.5em;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
       padding: 10px;
-      background-color: #000;
-      color: #fff;
     }
-    .back-btn {
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
+    /* Vistas */
+    .view {
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
     }
+    .view.active {
+      display: block;
+    }
+    /* Encabezados de cada vista */
+    .view h2 {
+      margin-bottom: 15px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+    /* Lista de carpetas al estilo Windows Explorer */
     .folder-list {
       list-style: none;
       padding: 0;
-      margin: 20px 0;
     }
     .folder-item {
       display: flex;
       align-items: center;
       padding: 10px;
       margin-bottom: 5px;
-      border: 1px solid #000;
-      border-radius: 3px;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      background-color: #f5f5f5;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background-color 0.2s, box-shadow 0.2s;
     }
     .folder-item:hover {
-      background-color: #eee;
+      background-color: #eaeaea;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
     }
-    .folder-icon {
-      font-size: 24px;
+    .folder-item:before {
+      content: "\1F4C1"; /* Icono de carpeta */
+      font-size: 1.5em;
       margin-right: 10px;
     }
+    /* Inputs y botones para agregar carpetas */
     .new-folder {
-      margin-top: 10px;
+      margin: 15px 0;
     }
     input[type="text"] {
-      width: calc(100% - 100px);
+      width: 100%;
       padding: 8px;
-      margin-right: 10px;
-      box-sizing: border-box;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      font-size: 1em;
+      margin-bottom: 8px;
     }
     button {
       padding: 8px 12px;
-      background-color: #000;
-      color: #fff;
       border: none;
+      border-radius: 4px;
+      background-color: #111;
+      color: #fff;
       cursor: pointer;
-      border-radius: 3px;
+      font-size: 1em;
+      transition: background-color 0.2s;
     }
     button:hover {
       background-color: #333;
     }
+    .back-button {
+      margin-bottom: 15px;
+      display: inline-block;
+      background-color: #444;
+    }
+    /* Formulario de preguntas */
     textarea {
       width: 100%;
-      height: 200px;
-      padding: 10px;
-      box-sizing: border-box;
-      margin-top: 10px;
+      height: 150px;
+      padding: 8px;
+      font-size: 1em;
+      border: 1px solid #aaa;
+      border-radius: 4px;
       resize: vertical;
-      border: 1px solid #000;
-      border-radius: 3px;
+      margin-bottom: 10px;
+    }
+    /* Animación */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
-  <!-- Página de Categorías -->
-  <div id="pageCategories" class="page active">
-    <header>
+  <header>
+    Gestor de Preguntas
+  </header>
+  <div class="container">
+    <!-- Vista de Categorías -->
+    <div id="viewCategories" class="view active">
       <h2>Categorías</h2>
-    </header>
-    <ul id="categoryList" class="folder-list"></ul>
-    <div class="new-folder">
-      <input type="text" id="newCategoryInput" placeholder="Nueva Categoría">
-      <button onclick="addCategory()">Agregar</button>
+      <ul id="categoryList" class="folder-list"></ul>
+      <div class="new-folder">
+        <input type="text" id="newCategoryInput" placeholder="Nueva Categoría">
+        <button onclick="addCategory()">Agregar Categoría</button>
+      </div>
     </div>
-  </div>
 
-  <!-- Página de Asignaturas -->
-  <div id="pageSubjects" class="page">
-    <header>
-      <button class="back-btn" onclick="goBack('pageCategories')">&#x2190; Atrás</button>
-      <h2>Asignaturas</h2>
-      <span></span>
-    </header>
-    <ul id="subjectList" class="folder-list"></ul>
-    <div class="new-folder">
-      <input type="text" id="newSubjectInput" placeholder="Nueva Asignatura">
-      <button onclick="addSubject()">Agregar</button>
+    <!-- Vista de Asignaturas -->
+    <div id="viewSubjects" class="view">
+      <button class="back-button" onclick="showView('viewCategories')">&larr; Volver a Categorías</button>
+      <h2>Asignaturas en <span id="currentCategory"></span></h2>
+      <ul id="subjectList" class="folder-list"></ul>
+      <div class="new-folder">
+        <input type="text" id="newSubjectInput" placeholder="Nueva Asignatura">
+        <button onclick="addSubject()">Agregar Asignatura</button>
+      </div>
     </div>
-  </div>
 
-  <!-- Página de Temas -->
-  <div id="pageTopics" class="page">
-    <header>
-      <button class="back-btn" onclick="goBack('pageSubjects')">&#x2190; Atrás</button>
-      <h2>Temas</h2>
-      <span></span>
-    </header>
-    <ul id="topicList" class="folder-list"></ul>
-    <div class="new-folder">
-      <input type="text" id="newTopicInput" placeholder="Nuevo Tema">
-      <button onclick="addTopic()">Agregar</button>
+    <!-- Vista de Temas -->
+    <div id="viewTopics" class="view">
+      <button class="back-button" onclick="showView('viewSubjects')">&larr; Volver a Asignaturas</button>
+      <h2>Temas en <span id="currentSubject"></span></h2>
+      <ul id="topicList" class="folder-list"></ul>
+      <div class="new-folder">
+        <input type="text" id="newTopicInput" placeholder="Nuevo Tema">
+        <button onclick="addTopic()">Agregar Tema</button>
+      </div>
     </div>
-  </div>
 
-  <!-- Página de Creación del Mazo de Preguntas -->
-  <div id="pageCreate" class="page">
-    <header>
-      <button class="back-btn" onclick="goBack('pageTopics')">&#x2190; Atrás</button>
-      <h2>Crear Mazo</h2>
-      <span></span>
-    </header>
-    <div>
-      <p><strong>Formato para Test:</strong> pregunta, opción correcta/ opción 2/ opción 3/ opción 4, explicación, T; ...</p>
-      <p><strong>Formato para Flashcard:</strong> pregunta, respuesta, explicación, F; ...</p>
+    <!-- Vista de Preguntas -->
+    <div id="viewQuestions" class="view">
+      <button class="back-button" onclick="showView('viewTopics')">&larr; Volver a Temas</button>
+      <h2>Crear Mazo en <span id="currentPath"></span></h2>
+      <p><strong>Formato para Test:</strong> pregunta, opción correcta/ opción 2/ opción 3/ opción 4, explicación, T; …</p>
+      <p><strong>Formato para Flashcard:</strong> pregunta, respuesta, explicación, F; …</p>
       <textarea id="questionsInput" placeholder="Escribe tus preguntas aquí..."></textarea>
       <button onclick="submitQuestions()">Enviar Preguntas</button>
-      <div id="responseMessage"></div>
+      <div id="responseMessage" style="margin-top:10px;"></div>
     </div>
   </div>
 
   <script>
-    // URL del Apps Script (reemplaza YOUR_SCRIPT_ID por el tuyo)
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbzU2pbvxYOLotEw60fwnKIJmGRLABwp_odNXzj0hY18ZrpTBRmkpjcgGJYph6hzMTdy/exec';
-    
-    // Estructura de datos para almacenar la información de carpetas
-    let data = { categories: [] };
+    // URL de tu Apps Script (reemplazar YOUR_SCRIPT_ID)
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbz3jLtqZKR9CtjX2P5GdBTeOgRzTGAOPtZWrXFJyByhtSScBoX6f32TjX-a1W-6YWri/exec';
+
+    // Estructura de datos para almacenar carpetas localmente
+    let data = {
+      categories: []
+    };
     let selectedCategory = null;
     let selectedSubject = null;
     let selectedTopic = null;
 
-    // Función para mostrar la página indicada y ocultar las demás
-    function showPage(pageId) {
-      const pages = document.querySelectorAll('.page');
-      pages.forEach(page => {
-        page.classList.remove('active');
+    // Función para mostrar la vista deseada
+    function showView(viewId) {
+      document.querySelectorAll('.view').forEach(view => {
+        view.classList.remove('active');
       });
-      document.getElementById(pageId).classList.add('active');
+      document.getElementById(viewId).classList.add('active');
+      // Actualiza los títulos de la ruta según corresponda
+      if(viewId === 'viewSubjects' && selectedCategory !== null) {
+        document.getElementById('currentCategory').textContent = data.categories[selectedCategory].name;
+      }
+      if(viewId === 'viewTopics' && selectedCategory !== null && selectedSubject !== null) {
+        document.getElementById('currentSubject').textContent = data.categories[selectedCategory].subjects[selectedSubject].name;
+      }
+      if(viewId === 'viewQuestions' && selectedCategory !== null && selectedSubject !== null && selectedTopic !== null) {
+        document.getElementById('currentPath').textContent =
+          data.categories[selectedCategory].name + " > " +
+          data.categories[selectedCategory].subjects[selectedSubject].name + " > " +
+          data.categories[selectedCategory].subjects[selectedSubject].topics[selectedTopic].name;
+      }
     }
 
-    // Renderiza la lista de Categorías
-    function renderCategories() {
+    // Función para renderizar la lista de carpetas según la vista actual
+    function renderLists() {
+      // Categorías
       const categoryList = document.getElementById('categoryList');
       categoryList.innerHTML = '';
       data.categories.forEach((cat, index) => {
-        const li = document.createElement('li');
+        let li = document.createElement('li');
         li.className = 'folder-item';
-        li.innerHTML = '<span class="folder-icon">&#128193;</span>' + cat.name;
+        li.textContent = cat.name;
         li.onclick = () => {
           selectedCategory = index;
-          renderSubjects();
-          showPage('pageSubjects');
+          showView('viewSubjects');
+          renderLists();
         };
         categoryList.appendChild(li);
       });
-    }
 
-    // Renderiza la lista de Asignaturas de la Categoría seleccionada
-    function renderSubjects() {
+      // Asignaturas
       const subjectList = document.getElementById('subjectList');
       subjectList.innerHTML = '';
       if (selectedCategory !== null) {
         data.categories[selectedCategory].subjects.forEach((sub, index) => {
-          const li = document.createElement('li');
+          let li = document.createElement('li');
           li.className = 'folder-item';
-          li.innerHTML = '<span class="folder-icon">&#128193;</span>' + sub.name;
+          li.textContent = sub.name;
           li.onclick = () => {
             selectedSubject = index;
-            renderTopics();
-            showPage('pageTopics');
+            showView('viewTopics');
+            renderLists();
           };
           subjectList.appendChild(li);
         });
       }
-    }
 
-    // Renderiza la lista de Temas de la Asignatura seleccionada
-    function renderTopics() {
+      // Temas
       const topicList = document.getElementById('topicList');
       topicList.innerHTML = '';
       if (selectedCategory !== null && selectedSubject !== null) {
         data.categories[selectedCategory].subjects[selectedSubject].topics.forEach((top, index) => {
-          const li = document.createElement('li');
+          let li = document.createElement('li');
           li.className = 'folder-item';
-          li.innerHTML = '<span class="folder-icon">&#128193;</span>' + top.name;
+          li.textContent = top.name;
           li.onclick = () => {
             selectedTopic = index;
-            showPage('pageCreate');
+            showView('viewQuestions');
           };
           topicList.appendChild(li);
         });
       }
     }
 
-    // Funciones para agregar nuevas carpetas (actualizan la estructura local)
+    // Funciones para agregar carpetas (actualización local)
     function addCategory() {
       const input = document.getElementById('newCategoryInput');
       const name = input.value.trim();
       if(name) {
         data.categories.push({ name: name, subjects: [] });
         input.value = '';
-        renderCategories();
+        renderLists();
       }
     }
-
     function addSubject() {
       if(selectedCategory === null) {
         alert('Seleccione una categoría primero.');
@@ -245,13 +268,12 @@
       if(name) {
         data.categories[selectedCategory].subjects.push({ name: name, topics: [] });
         input.value = '';
-        renderSubjects();
+        renderLists();
       }
     }
-
     function addTopic() {
       if(selectedCategory === null || selectedSubject === null) {
-        alert('Seleccione una categoría y una asignatura primero.');
+        alert('Seleccione una categoría y asignatura primero.');
         return;
       }
       const input = document.getElementById('newTopicInput');
@@ -259,16 +281,11 @@
       if(name) {
         data.categories[selectedCategory].subjects[selectedSubject].topics.push({ name: name });
         input.value = '';
-        renderTopics();
+        renderLists();
       }
     }
 
-    // Función para los botones "Atrás"
-    function goBack(page) {
-      showPage(page);
-    }
-
-    // Función para enviar las preguntas (se usa el mismo formato y la numeración se asigna en el Apps Script)
+    // Función para enviar las preguntas (POST)
     function submitQuestions() {
       if(selectedCategory === null || selectedSubject === null || selectedTopic === null) {
         alert('Seleccione Categoría, Asignatura y Tema.');
@@ -288,20 +305,17 @@
         topic: topicName,
         questions: questionsText
       };
-
       fetch(scriptURL, {
         method: 'POST',
         mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload)
       })
       .then(response => {
         document.getElementById('responseMessage').textContent = 'Preguntas enviadas exitosamente.';
         document.getElementById('questionsInput').value = '';
+        // Actualiza la estructura luego del envío
         loadFolderStructure();
-        showPage('pageTopics');
       })
       .catch(error => {
         console.error('Error:', error);
@@ -309,19 +323,18 @@
       });
     }
 
-    // Función para cargar la estructura de carpetas actualizada desde el Sheets
+    // Función para cargar la estructura actualizada del Sheet (GET)
     function loadFolderStructure() {
       fetch(scriptURL)
       .then(response => response.json())
       .then(result => {
         if(result.status === 'success') {
-          data = result.data; // Se espera { categories: [...] }
-          // Reinicia las selecciones y muestra la pantalla de Categorías
+          data = result.data; // { categories: [...] }
           selectedCategory = null;
           selectedSubject = null;
           selectedTopic = null;
-          renderCategories();
-          showPage('pageCategories');
+          renderLists();
+          showView('viewCategories');
         } else {
           console.error('Error al obtener la estructura:', result.message);
         }
