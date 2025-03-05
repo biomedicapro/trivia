@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestor de Preguntas - Estilo Windows Explorer</title>
   <style>
     /* Reset */
@@ -9,6 +10,10 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
     }
     body {
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -24,9 +29,10 @@
       font-size: 1.5em;
     }
     .container {
-      max-width: 800px;
-      margin: 20px auto;
+      width: 100vw;
+      height: calc(100vh - 60px);
       padding: 10px;
+      overflow-y: auto;
     }
     /* Vistas */
     .view {
@@ -314,8 +320,8 @@
       .then(response => {
         document.getElementById('responseMessage').textContent = 'Preguntas enviadas exitosamente.';
         document.getElementById('questionsInput').value = '';
-        // Actualiza la estructura luego del envío
-        loadFolderStructure();
+        // Actualiza la estructura sin reiniciar la vista actual
+        refreshFolderStructure();
       })
       .catch(error => {
         console.error('Error:', error);
@@ -324,6 +330,7 @@
     }
 
     // Función para cargar la estructura actualizada del Sheet (GET)
+    // Esta función se usa al cargar la página y restablece la vista por defecto.
     function loadFolderStructure() {
       fetch(scriptURL)
       .then(response => response.json())
@@ -344,7 +351,24 @@
       });
     }
 
-    // Al cargar la página, se obtiene la estructura actualizada
+    // Función para refrescar la estructura sin alterar la vista actual
+    function refreshFolderStructure() {
+      fetch(scriptURL)
+      .then(response => response.json())
+      .then(result => {
+        if(result.status === 'success') {
+          data = result.data;
+          renderLists();
+        } else {
+          console.error('Error al obtener la estructura:', result.message);
+        }
+      })
+      .catch(error => {
+        console.error('Fetch error:', error);
+      });
+    }
+
+    // Al cargar la página, se obtiene la estructura actualizada (vista por defecto: Categorías)
     window.onload = function() {
       loadFolderStructure();
     }
