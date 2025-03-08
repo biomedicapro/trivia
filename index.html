@@ -1,377 +1,399 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestor de Preguntas - Estilo Windows Explorer</title>
-  <style>
-    /* Reset */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    html, body {
-      width: 100%;
-      height: 100%;
-    }
-    body {
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #ffffff;
-      color: #111;
-      line-height: 1.6;
-    }
-    header {
-      background-color: #111;
-      color: #fff;
-      padding: 15px 20px;
-      text-align: center;
-      font-size: 1.5em;
-    }
-    .container {
-      width: 100vw;
-      height: calc(100vh - 60px);
-      padding: 10px;
-      overflow-y: auto;
-    }
-    /* Vistas */
-    .view {
-      display: none;
-      animation: fadeIn 0.3s ease-in-out;
-    }
-    .view.active {
-      display: block;
-    }
-    /* Encabezados de cada vista */
-    .view h2 {
-      margin-bottom: 15px;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 5px;
-    }
-    /* Lista de carpetas al estilo Windows Explorer */
-    .folder-list {
-      list-style: none;
-      padding: 0;
-    }
-    .folder-item {
-      display: flex;
-      align-items: center;
-      padding: 10px;
-      margin-bottom: 5px;
-      border: 1px solid #aaa;
-      border-radius: 4px;
-      background-color: #f5f5f5;
-      cursor: pointer;
-      transition: background-color 0.2s, box-shadow 0.2s;
-    }
-    .folder-item:hover {
-      background-color: #eaeaea;
-      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-    }
-    .folder-item:before {
-      content: "\1F4C1"; /* Icono de carpeta */
-      font-size: 1.5em;
-      margin-right: 10px;
-    }
-    /* Inputs y botones para agregar carpetas */
-    .new-folder {
-      margin: 15px 0;
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #aaa;
-      border-radius: 4px;
-      font-size: 1em;
-      margin-bottom: 8px;
-    }
-    button {
-      padding: 8px 12px;
-      border: none;
-      border-radius: 4px;
-      background-color: #111;
-      color: #fff;
-      cursor: pointer;
-      font-size: 1em;
-      transition: background-color 0.2s;
-    }
-    button:hover {
-      background-color: #333;
-    }
-    .back-button {
-      margin-bottom: 15px;
-      display: inline-block;
-      background-color: #444;
-    }
-    /* Formulario de preguntas */
-    textarea {
-      width: 100%;
-      height: 150px;
-      padding: 8px;
-      font-size: 1em;
-      border: 1px solid #aaa;
-      border-radius: 4px;
-      resize: vertical;
-      margin-bottom: 10px;
-    }
-    /* Animación */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    Gestor de Preguntas
-  </header>
-  <div class="container">
-    <!-- Vista de Categorías -->
-    <div id="viewCategories" class="view active">
-      <h2>Categorías</h2>
-      <ul id="categoryList" class="folder-list"></ul>
-      <div class="new-folder">
-        <input type="text" id="newCategoryInput" placeholder="Nueva Categoría">
-        <button onclick="addCategory()">Agregar Categoría</button>
-      </div>
-    </div>
-
-    <!-- Vista de Asignaturas -->
-    <div id="viewSubjects" class="view">
-      <button class="back-button" onclick="showView('viewCategories')">&larr; Volver a Categorías</button>
-      <h2>Asignaturas en <span id="currentCategory"></span></h2>
-      <ul id="subjectList" class="folder-list"></ul>
-      <div class="new-folder">
-        <input type="text" id="newSubjectInput" placeholder="Nueva Asignatura">
-        <button onclick="addSubject()">Agregar Asignatura</button>
-      </div>
-    </div>
-
-    <!-- Vista de Temas -->
-    <div id="viewTopics" class="view">
-      <button class="back-button" onclick="showView('viewSubjects')">&larr; Volver a Asignaturas</button>
-      <h2>Temas en <span id="currentSubject"></span></h2>
-      <ul id="topicList" class="folder-list"></ul>
-      <div class="new-folder">
-        <input type="text" id="newTopicInput" placeholder="Nuevo Tema">
-        <button onclick="addTopic()">Agregar Tema</button>
-      </div>
-    </div>
-
-    <!-- Vista de Preguntas -->
-    <div id="viewQuestions" class="view">
-      <button class="back-button" onclick="showView('viewTopics')">&larr; Volver a Temas</button>
-      <h2>Crear Mazo en <span id="currentPath"></span></h2>
-      <p><strong>Formato para Test:</strong> pregunta, opción correcta/ opción 2/ opción 3/ opción 4, explicación, T; …</p>
-      <p><strong>Formato para Flashcard:</strong> pregunta, respuesta, explicación, F; …</p>
-      <textarea id="questionsInput" placeholder="Escribe tus preguntas aquí..."></textarea>
-      <button onclick="submitQuestions()">Enviar Preguntas</button>
-      <div id="responseMessage" style="margin-top:10px;"></div>
-    </div>
-  </div>
-
-  <script>
-    // URL de tu Apps Script (reemplazar YOUR_SCRIPT_ID)
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbyWzW9nqkIp5_cPLgHvw0wLkaUEc9FzGw5VfhYAQnza3gaLIzEmXnd_mVW8sIybwfgP/exec';
-
-    // Estructura de datos para almacenar carpetas localmente
-    let data = {
-      categories: []
-    };
-    let selectedCategory = null;
-    let selectedSubject = null;
-    let selectedTopic = null;
-
-    // Función para mostrar la vista deseada
-    function showView(viewId) {
-      document.querySelectorAll('.view').forEach(view => {
-        view.classList.remove('active');
-      });
-      document.getElementById(viewId).classList.add('active');
-      // Actualiza los títulos de la ruta según corresponda
-      if(viewId === 'viewSubjects' && selectedCategory !== null) {
-        document.getElementById('currentCategory').textContent = data.categories[selectedCategory].name;
-      }
-      if(viewId === 'viewTopics' && selectedCategory !== null && selectedSubject !== null) {
-        document.getElementById('currentSubject').textContent = data.categories[selectedCategory].subjects[selectedSubject].name;
-      }
-      if(viewId === 'viewQuestions' && selectedCategory !== null && selectedSubject !== null && selectedTopic !== null) {
-        document.getElementById('currentPath').textContent =
-          data.categories[selectedCategory].name + " > " +
-          data.categories[selectedCategory].subjects[selectedSubject].name + " > " +
-          data.categories[selectedCategory].subjects[selectedSubject].topics[selectedTopic].name;
-      }
-    }
-
-    // Función para renderizar la lista de carpetas según la vista actual
-    function renderLists() {
-      // Categorías
-      const categoryList = document.getElementById('categoryList');
-      categoryList.innerHTML = '';
-      data.categories.forEach((cat, index) => {
-        let li = document.createElement('li');
-        li.className = 'folder-item';
-        li.textContent = cat.name;
-        li.onclick = () => {
-          selectedCategory = index;
-          showView('viewSubjects');
-          renderLists();
-        };
-        categoryList.appendChild(li);
-      });
-
-      // Asignaturas
-      const subjectList = document.getElementById('subjectList');
-      subjectList.innerHTML = '';
-      if (selectedCategory !== null) {
-        data.categories[selectedCategory].subjects.forEach((sub, index) => {
-          let li = document.createElement('li');
-          li.className = 'folder-item';
-          li.textContent = sub.name;
-          li.onclick = () => {
-            selectedSubject = index;
-            showView('viewTopics');
-            renderLists();
-          };
-          subjectList.appendChild(li);
-        });
-      }
-
-      // Temas
-      const topicList = document.getElementById('topicList');
-      topicList.innerHTML = '';
-      if (selectedCategory !== null && selectedSubject !== null) {
-        data.categories[selectedCategory].subjects[selectedSubject].topics.forEach((top, index) => {
-          let li = document.createElement('li');
-          li.className = 'folder-item';
-          li.textContent = top.name;
-          li.onclick = () => {
-            selectedTopic = index;
-            showView('viewQuestions');
-          };
-          topicList.appendChild(li);
-        });
-      }
-    }
-
-    // Funciones para agregar carpetas (actualización local)
-    function addCategory() {
-      const input = document.getElementById('newCategoryInput');
-      const name = input.value.trim();
-      if(name) {
-        data.categories.push({ name: name, subjects: [] });
-        input.value = '';
-        renderLists();
-      }
-    }
-    function addSubject() {
-      if(selectedCategory === null) {
-        alert('Seleccione una categoría primero.');
-        return;
-      }
-      const input = document.getElementById('newSubjectInput');
-      const name = input.value.trim();
-      if(name) {
-        data.categories[selectedCategory].subjects.push({ name: name, topics: [] });
-        input.value = '';
-        renderLists();
-      }
-    }
-    function addTopic() {
-      if(selectedCategory === null || selectedSubject === null) {
-        alert('Seleccione una categoría y asignatura primero.');
-        return;
-      }
-      const input = document.getElementById('newTopicInput');
-      const name = input.value.trim();
-      if(name) {
-        data.categories[selectedCategory].subjects[selectedSubject].topics.push({ name: name });
-        input.value = '';
-        renderLists();
-      }
-    }
-
-    // Función para enviar las preguntas (POST)
-    function submitQuestions() {
-      if(selectedCategory === null || selectedSubject === null || selectedTopic === null) {
-        alert('Seleccione Categoría, Asignatura y Tema.');
-        return;
-      }
-      const categoryName = data.categories[selectedCategory].name;
-      const subjectName = data.categories[selectedCategory].subjects[selectedSubject].name;
-      const topicName = data.categories[selectedCategory].subjects[selectedSubject].topics[selectedTopic].name;
-      const questionsText = document.getElementById('questionsInput').value.trim();
-      if(!questionsText) {
-        alert('Ingrese las preguntas.');
-        return;
-      }
-      const payload = {
-        category: categoryName,
-        subject: subjectName,
-        topic: topicName,
-        questions: questionsText
-      };
-      fetch(scriptURL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-      })
-      .then(response => {
-        document.getElementById('responseMessage').textContent = 'Preguntas enviadas exitosamente.';
-        document.getElementById('questionsInput').value = '';
-        // Actualiza la estructura sin reiniciar la vista actual
-        refreshFolderStructure();
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        document.getElementById('responseMessage').textContent = 'Error al enviar las preguntas.';
-      });
-    }
-
-    // Función para cargar la estructura actualizada del Sheet (GET)
-    // Esta función se usa al cargar la página y restablece la vista por defecto.
-    function loadFolderStructure() {
-      fetch(scriptURL)
-      .then(response => response.json())
-      .then(result => {
-        if(result.status === 'success') {
-          data = result.data; // { categories: [...] }
-          selectedCategory = null;
-          selectedSubject = null;
-          selectedTopic = null;
-          renderLists();
-          showView('viewCategories');
-        } else {
-          console.error('Error al obtener la estructura:', result.message);
-        }
-      })
-      .catch(error => {
-        console.error('Fetch error:', error);
-      });
-    }
-
-    // Función para refrescar la estructura sin alterar la vista actual
-    function refreshFolderStructure() {
-      fetch(scriptURL)
-      .then(response => response.json())
-      .then(result => {
-        if(result.status === 'success') {
-          data = result.data;
-          renderLists();
-        } else {
-          console.error('Error al obtener la estructura:', result.message);
-        }
-      })
-      .catch(error => {
-        console.error('Fetch error:', error);
-      });
-    }
-
-    // Al cargar la página, se obtiene la estructura actualizada (vista por defecto: Categorías)
-    window.onload = function() {
-      loadFolderStructure();
-    }
-  </script>
-</body>
-</html>
+ <html lang="es">
+ <head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Gestor de Preguntas - Estilo Windows Explorer</title>
+   <style>
+     /* Reset */
+     * {
+       margin: 0;
+       padding: 0;
+       box-sizing: border-box;
+     }
+     html, body {
+       width: 100%;
+       height: 100%;
+     }
+     body {
+       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+       background-color: #ffffff;
+       color: #111;
+       line-height: 1.6;
+     }
+     header {
+       background-color: #111;
+       color: #fff;
+       padding: 15px 20px;
+       text-align: center;
+       font-size: 1.5em;
+     }
+     .container {
+       width: 100vw;
+       height: calc(100vh - 60px);
+       padding: 10px;
+       overflow-y: auto;
+     }
+     /* Vistas */
+     .view {
+       display: none;
+       animation: fadeIn 0.3s ease-in-out;
+     }
+     .view.active {
+       display: block;
+     }
+     /* Encabezados de cada vista */
+     .view h2 {
+       margin-bottom: 15px;
+       border-bottom: 1px solid #ccc;
+       padding-bottom: 5px;
+     }
+     /* Lista de carpetas al estilo Windows Explorer */
+     .folder-list {
+       list-style: none;
+       padding: 0;
+     }
+     .folder-item {
+       display: flex;
+       align-items: center;
+       padding: 10px;
+       margin-bottom: 5px;
+       border: 1px solid #aaa;
+       border-radius: 4px;
+       background-color: #f5f5f5;
+       cursor: pointer;
+       transition: background-color 0.2s, box-shadow 0.2s;
+     }
+     .folder-item:hover {
+       background-color: #eaeaea;
+       box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+     }
+     .folder-item:before {
+       content: "\1F4C1"; /* Icono de carpeta */
+       font-size: 1.5em;
+       margin-right: 10px;
+     }
+     /* Inputs y botones para agregar carpetas */
+     .new-folder {
+       margin: 15px 0;
+     }
+     input[type="text"] {
+       width: 100%;
+       padding: 8px;
+       border: 1px solid #aaa;
+       border-radius: 4px;
+       font-size: 1em;
+       margin-bottom: 8px;
+     }
+     button {
+       padding: 8px 12px;
+       border: none;
+       border-radius: 4px;
+       background-color: #111;
+       color: #fff;
+       cursor: pointer;
+       font-size: 1em;
+       transition: background-color 0.2s;
+     }
+     button:hover {
+       background-color: #333;
+     }
+     .back-button {
+       margin-bottom: 15px;
+       display: inline-block;
+       background-color: #444;
+     }
+     /* Formulario de preguntas */
+     textarea {
+       width: 100%;
+       height: 150px;
+       padding: 8px;
+       font-size: 1em;
+       border: 1px solid #aaa;
+       border-radius: 4px;
+       resize: vertical;
+       margin-bottom: 10px;
+     }
+     /* Animación */
+     @keyframes fadeIn {
+       from { opacity: 0; transform: translateY(10px); }
+       to { opacity: 1; transform: translateY(0); }
+     }
+   </style>
+ </head>
+ <body>
+   <header>
+     Gestor de Preguntas
+   </header>
+   <div class="container">
+     <!-- Vista de Categorías -->
+     <div id="viewCategories" class="view active">
+       <h2>Categorías</h2>
+       <ul id="categoryList" class="folder-list"></ul>
+       <div class="new-folder">
+         <input type="text" id="newCategoryInput" placeholder="Nueva Categoría">
+         <button onclick="addCategory()">Agregar Categoría</button>
+       </div>
+     </div>
+ 
+     <!-- Vista de Asignaturas -->
+     <div id="viewSubjects" class="view">
+       <button class="back-button" onclick="showView('viewCategories')">&larr; Volver a Categorías</button>
+       <h2>Asignaturas en <span id="currentCategory"></span></h2>
+       <ul id="subjectList" class="folder-list"></ul>
+       <div class="new-folder">
+         <input type="text" id="newSubjectInput" placeholder="Nueva Asignatura">
+         <button onclick="addSubject()">Agregar Asignatura</button>
+       </div>
+     </div>
+ 
+     <!-- Vista de Temas -->
+     <div id="viewTopics" class="view">
+       <button class="back-button" onclick="showView('viewSubjects')">&larr; Volver a Asignaturas</button>
+       <h2>Temas en <span id="currentSubject"></span></h2>
+       <ul id="topicList" class="folder-list"></ul>
+       <div class="new-folder">
+         <input type="text" id="newTopicInput" placeholder="Nuevo Tema">
+         <button onclick="addTopic()">Agregar Tema</button>
+       </div>
+     </div>
+ 
+     <!-- Vista de Preguntas -->
+     <div id="viewQuestions" class="view">
+       <button class="back-button" onclick="showView('viewTopics')">&larr; Volver a Temas</button>
+       <h2>Crear Mazo en <span id="currentPath"></span></h2>
+       <p><strong>Formato para Test:</strong> pregunta, opción correcta/ opción 2/ opción 3/ opción 4, explicación, T; …</p>
+       <p><strong>Formato para Flashcard:</strong> pregunta, respuesta, explicación, F; …</p>
+       <textarea id="questionsInput" placeholder="Escribe tus preguntas aquí..."></textarea>
+       <button onclick="submitQuestions()">Enviar Preguntas</button>
+       <div id="responseMessage" style="margin-top:10px;"></div>
+     </div>
+   </div>
+ 
+   <script>
+     // URL de tu Apps Script (reemplazar YOUR_SCRIPT_ID)
+     const scriptURL = 'https://script.google.com/macros/s/AKfycbwudFIs-yXrq1rkA-wdDBxc5U6UMMqxyJ6raj9Dm7DiyZ7K98yyP7pkNyhpkhlAxUI/exec';
+ 
+     // Estructura de datos para almacenar carpetas localmente
+     let data = {
+       categories: []
+     };
+     let selectedCategory = null;
+     let selectedSubject = null;
+     let selectedTopic = null;
+ 
+     // Función para mostrar la vista deseada
+     function showView(viewId) {
+       document.querySelectorAll('.view').forEach(view => {
+         view.classList.remove('active');
+       });
+       document.getElementById(viewId).classList.add('active');
+       // Actualiza los títulos de la ruta según corresponda
+       if(viewId === 'viewSubjects' && selectedCategory !== null) {
+         document.getElementById('currentCategory').textContent = data.categories[selectedCategory].name;
+       }
+       if(viewId === 'viewTopics' && selectedCategory !== null && selectedSubject !== null) {
+         document.getElementById('currentSubject').textContent = data.categories[selectedCategory].subjects[selectedSubject].name;
+       }
+       if(viewId === 'viewQuestions' && selectedCategory !== null && selectedSubject !== null && selectedTopic !== null) {
+         document.getElementById('currentPath').textContent =
+           data.categories[selectedCategory].name + " > " +
+           data.categories[selectedCategory].subjects[selectedSubject].name + " > " +
+           data.categories[selectedCategory].subjects[selectedSubject].topics[selectedTopic].name;
+       }
+     }
+ 
+     // Función para renderizar la lista de carpetas según la vista actual
+     function renderLists() {
+       // Categorías
+       const categoryList = document.getElementById('categoryList');
+       categoryList.innerHTML = '';
+       data.categories.forEach((cat, index) => {
+         let li = document.createElement('li');
+         li.className = 'folder-item';
+         li.textContent = cat.name;
+         li.onclick = () => {
+           selectedCategory = index;
+           showView('viewSubjects');
+           renderLists();
+         };
+         categoryList.appendChild(li);
+       });
+ 
+       // Asignaturas
+       const subjectList = document.getElementById('subjectList');
+       subjectList.innerHTML = '';
+       if (selectedCategory !== null) {
+         data.categories[selectedCategory].subjects.forEach((sub, index) => {
+           let li = document.createElement('li');
+           li.className = 'folder-item';
+           li.textContent = sub.name;
+           li.onclick = () => {
+             selectedSubject = index;
+             showView('viewTopics');
+             renderLists();
+           };
+           subjectList.appendChild(li);
+         });
+       }
+ 
+       // Temas
+       const topicList = document.getElementById('topicList');
+       topicList.innerHTML = '';
+       if (selectedCategory !== null && selectedSubject !== null) {
+         data.categories[selectedCategory].subjects[selectedSubject].topics.forEach((top, index) => {
+           let li = document.createElement('li');
+           li.className = 'folder-item';
+           li.textContent = top.name;
+           li.onclick = () => {
+             selectedTopic = index;
+             showView('viewQuestions');
+           };
+           topicList.appendChild(li);
+         });
+       }
+     }
+ 
+     // Funciones para agregar carpetas (actualización local)
+     function addCategory() {
+       const input = document.getElementById('newCategoryInput');
+       const name = input.value.trim();
+       if(name) {
+         data.categories.push({ name: name, subjects: [] });
+         input.value = '';
+         renderLists();
+       }
+     }
+     function addSubject() {
+       if(selectedCategory === null) {
+         alert('Seleccione una categoría primero.');
+         return;
+       }
+       const input = document.getElementById('newSubjectInput');
+       const name = input.value.trim();
+       if(name) {
+         data.categories[selectedCategory].subjects.push({ name: name, topics: [] });
+         input.value = '';
+         renderLists();
+       }
+     }
+     function addTopic() {
+       if(selectedCategory === null || selectedSubject === null) {
+         alert('Seleccione una categoría y asignatura primero.');
+         return;
+       }
+       const input = document.getElementById('newTopicInput');
+       const name = input.value.trim();
+       if(name) {
+         data.categories[selectedCategory].subjects[selectedSubject].topics.push({ name: name });
+         input.value = '';
+         renderLists();
+       }
+     }
+ 
+     // Función para enviar las preguntas (POST)
+     function submitQuestions() {
+       if(selectedCategory === null || selectedSubject === null || selectedTopic === null) {
+         alert('Seleccione Categoría, Asignatura y Tema.');
+         return;
+       }
+       const categoryName = data.categories[selectedCategory].name;
+       const subjectName = data.categories[selectedCategory].subjects[selectedSubject].name;
+       const topicName = data.categories[selectedCategory].subjects[selectedSubject].topics[selectedTopic].name;
+       const questionsText = document.getElementById('questionsInput').value.trim();
+       if(!questionsText) {
+         alert('Ingrese las preguntas.');
+         return;
+       }
+       const payload = {
+         category: categoryName,
+         subject: subjectName,
+         topic: topicName,
+         questions: questionsText
+       };
+       fetch(scriptURL, {
+         method: 'POST',
+         mode: 'no-cors',
+         headers: {'Content-Type': 'application/json'},
+         body: JSON.stringify(payload)
+       })
+       .then(response => {
+         document.getElementById('responseMessage').textContent = 'Preguntas enviadas exitosamente.';
+// Crear y mostrar una alerta no invasiva
+ const alertBox = document.createElement('div');
+ alertBox.textContent = '✅ Preguntas enviadas exitosamente';
+ alertBox.style.position = 'fixed';
+ alertBox.style.bottom = '20px';
+ alertBox.style.right = '20px';
+ alertBox.style.backgroundColor = '#4CAF50';
+ alertBox.style.color = 'white';
+ alertBox.style.padding = '15px';
+ alertBox.style.borderRadius = '5px';
+ alertBox.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.2)';
+ alertBox.style.fontSize = '1em';
+ alertBox.style.zIndex = '1000';
+ alertBox.style.opacity = '1';
+ alertBox.style.transition = 'opacity 0.5s ease-in-out';
+ document.body.appendChild(alertBox);
+ 
+ // Ocultar la alerta después de 3 segundos
+ setTimeout(() => {
+     alertBox.style.opacity = '0';
+     setTimeout(() => document.body.removeChild(alertBox), 500);
+ }, 3000);
+         document.getElementById('questionsInput').value = '';
+         // Actualiza la estructura sin reiniciar la vista actual
+         refreshFolderStructure();
+       })
+       .catch(error => {
+         console.error('Error:', error);
+         document.getElementById('responseMessage').textContent = 'Error al enviar las preguntas.';
+       });
+     }
+ 
+     // Función para cargar la estructura actualizada del Sheet (GET)
+     // Esta función se usa al cargar la página y restablece la vista por defecto.
+     function loadFolderStructure() {
+       fetch(scriptURL)
+       .then(response => response.json())
+       .then(result => {
+         if(result.status === 'success') {
+           data = result.data; // { categories: [...] }
+           selectedCategory = null;
+           selectedSubject = null;
+           selectedTopic = null;
+           renderLists();
+           showView('viewCategories');
+         } else {
+           console.error('Error al obtener la estructura:', result.message);
+         }
+       })
+       .catch(error => {
+         console.error('Fetch error:', error);
+       });
+     }
+ 
+     // Función para refrescar la estructura sin alterar la vista actual
+     function refreshFolderStructure() {
+       fetch(scriptURL)
+       .then(response => response.json())
+       .then(result => {
+         if(result.status === 'success') {
+           data = result.data;
+           renderLists();
+         } else {
+           console.error('Error al obtener la estructura:', result.message);
+         }
+       })
+       .catch(error => {
+         console.error('Fetch error:', error);
+       });
+     }
+ 
+     // Al cargar la página, se obtiene la estructura actualizada (vista por defecto: Categorías)
+     window.onload = function() {
+       loadFolderStructure();
+     }
+   </script>
+ </body>
+ </html>
