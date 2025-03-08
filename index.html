@@ -172,7 +172,7 @@
 
   <script>
     // URL de tu Apps Script (reemplazar YOUR_SCRIPT_ID)
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbzD_D-9h2AXrvLaUITrovYa81VUh06MlIg_vzWav4hjaWgjvrsANJT97RVDVvWOkY4b/exec';
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyWzW9nqkIp5_cPLgHvw0wLkaUEc9FzGw5VfhYAQnza3gaLIzEmXnd_mVW8sIybwfgP/exec';
 
     // Estructura de datos para almacenar carpetas localmente
     let data = {
@@ -318,28 +318,7 @@
         body: JSON.stringify(payload)
       })
       .then(response => {
-// Crear y mostrar una alerta no invasiva
-const alertBox = document.createElement('div');
-alertBox.textContent = '✅ Preguntas enviadas exitosamente';
-alertBox.style.position = 'fixed';
-alertBox.style.bottom = '20px';
-alertBox.style.right = '20px';
-alertBox.style.backgroundColor = '#4CAF50';
-alertBox.style.color = 'white';
-alertBox.style.padding = '15px';
-alertBox.style.borderRadius = '5px';
-alertBox.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.2)';
-alertBox.style.fontSize = '1em';
-alertBox.style.zIndex = '1000';
-alertBox.style.opacity = '1';
-alertBox.style.transition = 'opacity 0.5s ease-in-out';
-document.body.appendChild(alertBox);
-
-// Ocultar la alerta después de 3 segundos
-setTimeout(() => {
-    alertBox.style.opacity = '0';
-    setTimeout(() => document.body.removeChild(alertBox), 500);
-}, 3000);
+        document.getElementById('responseMessage').textContent = 'Preguntas enviadas exitosamente.';
         document.getElementById('questionsInput').value = '';
         // Actualiza la estructura sin reiniciar la vista actual
         refreshFolderStructure();
